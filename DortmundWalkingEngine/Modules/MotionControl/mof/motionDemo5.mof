@@ -1,0 +1,50 @@
+motion_id = motionDemo5
+"HP HT  AL1 AL2 AL3 AL4  AR1 AR2 AR3 AR4  LL0 LL1 LL2 LL3 LL4 LL5  LR0 LR1 LR2 LR3 LR4 LR5  Int Dur 
+
+label start
+"stretch a little		
+
+* * -90 30 0 0 -90 30 0 0 0 0 -30 60 -30 0 0 0 -30 60 -30 0 1 1000
+0   0 	-90	90 	0	-50	-90 	90 	0	-50	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30 	0	1 	1000
+transition activeStand motionDemo5 end
+0   0 	-90	30 	0	0	-90 	30 	0	0	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	1000
+transition activeStand motionDemo5 end
+
+"swing arms
+0   0 	-65	30 	0	-30	-115 	30 	0	-30	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30 	0	1 	600
+transition activeStand motionDemo5 end
+0   0 -115	30 	0	-30	-65		30 	0	-30	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30 	0	1 	1200
+transition activeStand motionDemo5 end
+0   0	-80	30 	0	0	-80 	30 	0	0	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	600
+transition activeStand motionDemo5 end
+
+"bend elbows
+0   0	-50	30 	-80	-80	-50 	30 	-80	-80	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	1000
+transition activeStand motionDemo5 end
+0   0	-50	30 	-80	-10	-50 	30 	-80	-10	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	800
+transition activeStand motionDemo5 end
+0   0	-50	30 	-80	-80	-50 	30 	-80	-80	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	800
+transition activeStand motionDemo5 end
+0   0	-50	30 	-80	-10	-50 	30 	-80	-10	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	800
+transition activeStand motionDemo5 end
+0   0	-50	30 	-80	-80	-50 	30 	-80	-80	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	800
+transition activeStand motionDemo5 end
+0   0	-80	30 	-80	-10	-80 	30 	-80	-10	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	1000
+transition activeStand motionDemo5 end
+
+
+"move sideways
+0   0 	-80	30 	0	-15	-80 	30 	0	-15	0 	-15	-30 60 -30	15	0 	15 	-30 60 -30	-15	1 	1500
+transition activeStand motionDemo5 end
+0   0 	-80	30 	0	-15	-80 	30 	0	-15	0 	15	-30 60 -30	-15	0 	-15 -30 60 -30 	15	1 	2000
+transition activeStand motionDemo5 end
+0   0 	-80	30 	0	-15	-80 	30 	0	-15	0 	-15	-30 60 -30	15	0 	15 	-30 60 -30	-15	1 	2000
+transition activeStand motionDemo5 end
+0   0 	-80	30 	0	-15	-80 	30 	0	-15	0 	15	-30 60 -30	-15	0 	-15 -30 60 -30 	15	1 	2000
+transition activeStand motionDemo5 end
+
+label end
+* * -90 30 0 0 -90 30 0 0 0 0 -30 60 -30 0 0 0 -30 60 -30 0 1 1500
+
+transition allMotions extern start
+

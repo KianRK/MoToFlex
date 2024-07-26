@@ -1,0 +1,111 @@
+motion_id = motionDemo4
+"HP HT  AL1 AL2 AL3 AL4  AR1 AR2 AR3 AR4  LL0 LL1 LL2 LL3 LL4 LL5  LR0 LR1 LR2 LR3 LR4 LR5  Int Dur 
+
+label start
+"stretch
+
+
+0   0 	-90	90 	0	-50	-90 	90 	0	-50	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30 	0	1 	1000
+transition activeStand motionDemo4 end
+0   0 	-90	30 	0	0	-90 	30 	0	0	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	1000
+transition activeStand motionDemo4 end
+
+"swing arms
+0   0 	-65	30 	0	-30	-115 	30 	0	-30	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30 	0	1 	600
+transition activeStand motionDemo4 end
+0   0 -115	30 	0	-30	-65		30 	0	-30	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30 	0	1 	1200
+transition activeStand motionDemo4 end
+0   0	-80	30 	0	0	-80 	30 	0	0	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	600
+transition activeStand motionDemo4 end
+
+"bend elbows
+0   0	-50	30 	-80	-80	-50 	30 	-80	-80	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	1000
+transition activeStand motionDemo4 end
+0   0	-50	30 	-80	-10	-50 	30 	-80	-10	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	800
+transition activeStand motionDemo4 end
+0   0	-50	30 	-80	-80	-50 	30 	-80	-80	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	800
+transition activeStand motionDemo4 end
+0   0	-50	30 	-80	-10	-50 	30 	-80	-10	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	800
+transition activeStand motionDemo4 end
+0   0	-50	30 	-80	-80	-50 	30 	-80	-80	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	800
+transition activeStand motionDemo4 end
+0   0	-80	30 	-80	-10	-80 	30 	-80	-10	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	1000
+transition activeStand motionDemo4 end
+
+"stretch sideways
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-30 60 -30	15	0 	15 	-30 60 -30	-15	1 	1500
+transition activeStand motionDemo4 end
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-10 20 -10	15	0 	15 	-10 20 -10	-15	1 	800
+transition activeStand motionDemo4 end
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-10 20 -10	15	0 	15 	-10 20 -10	-15	1 	200
+transition activeStand motionDemo4 end
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-40 80 -40	15	0 	15 	-40 80 -40	-15	1 	800
+transition activeStand motionDemo4 end
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-10 20 -10	15	0 	15 	-10 20 -10	-15	1 	800
+transition activeStand motionDemo4 end
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-10 20 -10	15	0 	15 	-10 20 -10	-15	1 	200
+transition activeStand motionDemo4 end
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-30 60 -30	15	0 	15 	-30 60 -30	-15	1 	800
+transition activeStand motionDemo4 end
+
+0   0 	-80	20 	0	-15	80 		20 	0	-15	0 	15	-30 60 -30	-15	0 	-15 -30 60 -30 	15	1 	2000
+transition activeStand motionDemo4 end
+0   0 	-80	20 	0	-15	80 		20 	0	-15	0 	15	-10 20 -10	-15	0 	-15 -10 20 -10	15	1 	800
+transition activeStand motionDemo4 end
+0   0 	-80	20 	0	-15	80 		20 	0	-15	0 	15	-10 20 -10	-15	0 	-15 -10 20 -10	15	1 	200
+transition activeStand motionDemo4 end
+0   0 	-80	20 	0	-15	80 		20 	0	-15	0 	15	-40 80 -40	-15	0 	-15 -40 80 -40	15	1 	800
+transition activeStand motionDemo4 end
+0   0 	-80	20 	0	-15	80 		20 	0	-15	0 	15	-10 20 -10	-15	0 	-15 -10 20 -10	15	1 	800
+transition activeStand motionDemo4 end
+0   0 	-80	20 	0	-15	80 		20 	0	-15	0 	15	-10 20 -10	-15	0 	-15 -10 20 -10	15	1 	200
+transition activeStand motionDemo4 end
+0   0 	-80	20 	0	-15	80 		20 	0	-15	0 	15	-30 60 -30	-15	0 	-15 -30 60 -30	15	1 	800
+transition activeStand motionDemo4 end
+
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-30 60 -30	15	0 	15 	-30 60 -30	-15	1 	2000
+transition activeStand motionDemo4 end
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-10 20 -10	15	0 	15 	-10 20 -10	-20	1 	800
+transition activeStand motionDemo4 end
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-10 20 -10	15	0 	15 	-10 20 -10	-15	1 	200
+transition activeStand motionDemo4 end
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-40 80 -40	15	0 	15 	-40 80 -40	-15	1 	800
+transition activeStand motionDemo4 end
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-10 20 -10	15	0 	15 	-10 20 -10	-15	1 	800
+transition activeStand motionDemo4 end
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-10 20 -10	15	0 	15 	-10 20 -10	-15	1 	200
+transition activeStand motionDemo4 end
+0   0 	80	20 	0	-15	-80 	20 	0	-15	0 	-15	-30 60 -30	15	0 	15 	-30 60 -30	-15	1 	800
+transition activeStand motionDemo4 end
+
+0   0 	-50	30 	0	0	-50 	30 	0	0	0 	0 	-30 60 -30	0	0 	0 	-30 60 -30	0	1 	1000
+transition activeStand motionDemo4 end
+
+
+"bend knees
+0   0	0	0 	0	0	0 		0 	0	0	0 	0 	-10 20	-10	0	0 	0 	-10	20	-10	0	1 	1000
+transition activeStand motionDemo4 end
+0   0	0	0 	0	0	0 		0 	0	0	0 	0 	-50 100	-50	0	0 	0 	-50 100	-50	0	1 	1000
+transition activeStand motionDemo4 end
+0   0	0	0 	0	0	0 		0 	0	0	0 	0 	-50 100	-50	0	0 	0 	-50 100	-50	0	1 	200
+transition activeStand motionDemo4 end
+0   0	0	0 	0	0	0 		0 	0	0	0 	0 	-10	20	-10	0	0 	0 	-10	20	-10	0	1 	1000
+transition activeStand motionDemo4 end
+0   0	0	0 	0	0	0 		0 	0	0	0 	0 	-50 100	-50	0	0 	0 	-50 100	-50	0	1 	1000
+transition activeStand motionDemo4 end
+0   0	0	0 	0	0	0 		0 	0	0	0 	0 	-50 100	-50	0	0 	0 	-50 100	-50	0	1 	200
+transition activeStand motionDemo4 end
+0   0	0	0 	0	0	0 		0 	0	0	0 	0 	-10	20	-10	0	0 	0 	-10	20	-10	0	1 	1000
+transition activeStand motionDemo4 end
+0   0	0	0 	0	0	0 		0 	0	0	0 	0 	-50 100	-50	0	0 	0 	-50 100	-50	0	1 	1000
+transition activeStand motionDemo4 end
+0   0	0	0 	0	0	0 		0 	0	0	0 	0 	-50 100	-50	0	0 	0 	-50 100	-50	0	1 	200
+transition activeStand motionDemo4 end
+0   0	-80	30 	0	0	-80		30 	0	0	0 	0 	-10	20	-10	0	0 	0 	-10	20	-10	0	1 	1000
+transition activeStand motionDemo4 end
+
+label end
+* * -90 30 0 0 -90 30 0 0 0 0 -30 60 -30 0 0 0 -30 60 -30 0 1 1500
+
+transition allMotions extern start
+

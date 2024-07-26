@@ -1,0 +1,27 @@
+motion_id = goalkeeperDefend
+
+"defend on left side
+label start
+
+"HP HT  AL1 AL2 AL3AL4	AR1 AR2 AR3 AR4		LL0 LL1 LL2 LL3 LL4 LL5		LR0 LR1 LR2 LR3 LR4 LR5 Int Dur   
+
+hardness 100 100 100 100 100 100 100 100 100 100 	100 100 100 100 100 100 100 100 100 100 100 100 500
+"starting point : low stand
+0 -5 -90 30 0 0 -90 30 0 0					0 -1.8 -40 100 -55 1.8 	 	0 -1.8 -40 100 -55 1.8			1 150
+
+hardness 50 50 50 50 50 50 50 50 50 50 		100 100 100 100 100 100 			100 100 100 100 100 100 			100
+"rotate LR5 and LR1 and move left arm up to catch fall
+0 -5 0 70 0 -30 0 30 0 0					0 -1.8 -40 100 -55 1.8 	 	 	0 5 -40 100 -55 15			1 150
+
+"lift left leg, push right leg up , move right arm to shift weight to front
+0 -5 90 70 0 -30 90 10 0 0					0 0 -50 110 -65 0 	 	 	0 5 -20 50 -20 15			1 150
+
+hardness 0 0 0 0 0 0 0 0 0 0 				50 50 50 50 50 0 				50 50 50 50 50  0 				  500
+"turn to lie on front
+"0 -5 90 70 0 -30 90 10 0 0					0 0 -20 110 -65 0 	 	 	0 0 -60 50 -20 0			1 2000
+0 -5 90 70 0 -30 90 10 0 0					10 0 -10 70 -65 0 	 	 	10 5 -65 50 -20 0			1 400
+transition standUpFrontNao standUpFrontNao start
+transition standUpBackNao standUpBackNao start
+
+transition allMotions extern start
+

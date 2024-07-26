@@ -1,0 +1,12 @@
+motion_id = footsensortest
+"Just stand
+ 
+label start
+"HP		HT		AL1		AL2		AL3		AL4		AR1		AR2		AR3		AR4		LL0		LL1		LL2		LL3		LL4		LL5		LR0		LR1		LR2		LR3		LR4		LR5		Int		Dur
+0  	30 	-90	30 	0	0	-90 	30 	0		0		0		0		0		100		-8		0		0		0		0		100		-8		0		1		100
+label stay
+0  	30 	-90	30 	0	0	-90 	30 	0		0		0		0		0		100		-8		0		0		0		0		100		-8		0		1		100
+transition footsensortest footsensortest stay
+0  	30 	-90	30 	0	0	-90 	30 	0		0		0		0		0		100		-8		0		0		0		0		100		-8		0		1		100
+
+transition allMotions extern start

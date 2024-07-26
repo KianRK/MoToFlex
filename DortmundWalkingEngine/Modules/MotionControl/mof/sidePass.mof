@@ -1,0 +1,36 @@
+motion_id = sidePass
+
+"side pass optimized for speed and little kicking space
+
+label start
+
+"HP HT  AL1 AL2 AL3AL4	AR1 AR2 AR3 AR4		LL0 LL1 LL2 LL3 LL4 LL5		LR0 LR1 LR2 LR3 LR4 LR5 Int Dur   
+"use full hardness
+hardness 100 100 100 100 100 100 100 100 100 100 	100 100 100 100 100 100 100 100 100 100 100 100 500
+
+"begin leaning
+0 -28 -90 10 0 0 	  -90 30 0 0		0 -25 -35 80 -50 25 	 	0 30 -35 60 -30 -30		1 500
+transition standUpFrontNao standUpFrontNao start
+transition standUpBackNao standUpBackNao start
+
+"last preperation for kick
+0 -28 -90 10 0 0 	  -90 30 0 0		0 -40 -60 40 20 30 	 	  0 30 -35 60 -30 -30		1 300
+transition standUpFrontNao standUpFrontNao start
+transition standUpBackNao standUpBackNao start
+
+"kick (100 pass)
+0 -28 -90 10 0 0 	  -90 30 0 0		0 -20 -80 50 20 30 	 	  0 30 -35 60 -30 -30		1 50
+transition standUpFrontNao standUpFrontNao start
+transition standUpBackNao standUpBackNao start
+
+"leaning reverse
+0 -28 -90 10 0 0 	  -90 30 0 0		0 -30 -35 80 -50 30 	 	0 25 -35 60 -30 -25		1 700
+transition standUpFrontNao standUpFrontNao start
+transition standUpBackNao standUpBackNao start
+
+"stand up again
+0 -28 -90 30 0 0    -90 30 0 0		0 -1.8 -30 60 -30 1.8 	0 -1.8 -30 60 -30 1.8 1 1000
+transition standUpFrontNao standUpFrontNao start
+transition standUpBackNao standUpBackNao start
+
+transition allMotions extern start

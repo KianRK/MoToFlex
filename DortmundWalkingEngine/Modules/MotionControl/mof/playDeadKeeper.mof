@@ -1,0 +1,17 @@
+motion_id = playDeadKeeper
+"Switch off all leg joints except LL2 and LR2 to keep position
+
+label start
+
+"HP  HT  AL0 AL1 AL2 AL3  AR0 AR1 AR2 AR3  	LL0 LL1 LL2 LL3 LL4 LL5  	LR0 LR1 LR2 LR3 LR4 LR5  Int Dur
+hardness * * 50 50 50 50 50 50 50 50 		50 50 50 50 50 50 			50 50 50 50 50 50 500
+*  	* 	-60	30 	0	0	  -60 30  0	  0		0 	0 	-55 120 -60 0 		0 	0 	-55 120 -60 0	 1 	 1000
+
+hardness * * 50 50 50 50  50 50 50 50 		0 	0 	50 	0 	0 	0 		0 	0 	50 	0 	0 	0        	500
+*  	* 	-60	30 	0	0	  -60 30  0	  0	    0  	0 	-55 120 -60 0    	0 	0 	-55 120 -60 0	 1 	 1000
+
+label stay
+  -   -    -   -   -   -    -   -   -   -    -   -   -   -   -   -    -   -   -   -   -   -    0 100
+transition playDeadKeeper playDeadKeeper stay
+
+transition allMotions extern start

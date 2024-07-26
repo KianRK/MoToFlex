@@ -1,0 +1,19 @@
+motion_id = standStraight
+
+
+"orignale Stand of Nao 
+"HP 	HT  	AL1 	AL2 	AL3 	AL4  	AR1 	AR2 	AR3 	AR4  	LL0 	LL1 	LL2 	LL3 	LL4 	LL5  	LR0 	LR1 	LR2 	LR3 	LR4 	LR5  	Int 	Dur   
+label start
+*  	* 	-90	30 	0	0	-90 	30 	0	0	0 	0 	0 	0	0	0	0 	0 	0	0	0 	0	1 	4000
+
+label stay
+
+*  	* 	-90	30 	0	0	-90 	30 	0	0	0 	0 	0 	0	0	0	0 	0 	0	0	0 	0	1 	100
+
+transition standStraight standStraight stay
+*  	* 	-90	30 	0	0	-90 	30 	0	0	0 	0 	0 	0	0	0	0 	0 	0	0	0 	0	1 	100
+transition stand standStraight stay
+
+* 	* 	-90 30 0 0 	-90 30 0 0		0 -1.8 -26 71 -45 1.8 		 0 0 -28 68 -40 0 			1 1000
+
+transition allMotions extern start

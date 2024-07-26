@@ -1,0 +1,12 @@
+.DS_Store
+Simulator/obj
+Simulator/bin
+config/200.csv-NaoState0.UncompensatedTarget200-Output.csv
+output
+tools/ode-0.16.4
+Simulator/motoflex_gym/WalkingSimulator.so
+**.pyc
+wandb
+tmp
+.venv
+Normal.ftn

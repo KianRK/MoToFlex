@@ -1,0 +1,60 @@
+motion_id = extern
+
+"This motion is entry point for SpecialAction from other motion modules
+
+label start
+
+"All mofs must be enumerated here
+
+transition activeStand activeStand start
+transition bow bow start
+
+transition cheering cheering start
+
+transition demoHardness demoHardness start
+transition demoJesus demoJesus start
+transition demoUpright demoUpright start
+transition falling falling start
+transition footsensortest footsensortest start
+transition goalkeeperDefend goalkeeperDefend start
+transition haka haka start
+
+transition motionDemo1 motionDemo1 start
+transition motionDemo2 motionDemo2 start
+transition motionDemo3 motionDemo3 start
+transition motionDemo4 motionDemo4 start
+transition motionDemo5 motionDemo5 start
+transition motionDemo6 motionDemo6 start
+transition no no start
+
+"All kicks
+transition sideKickHard sideKickHard start
+transition sidePass sidePass start
+transition kick_0Hard kick_0Hard start
+transition kick_1Hard kick_1Hard start
+transition kick_2Hard kick_2Hard start
+transition kick_3Hard kick_3Hard start
+transition kickInner kickInner start
+transition kickMiddle kickMiddle start
+transition kickOuter kickOuter start
+
+transition pitch pitch start
+transition playDead playDead start
+transition playDeadKeeper playDeadKeeper start
+transition playDeadR playDeadR start
+transition shakehand shakehand start
+transition sitBackAndWait sitBackAndWait start
+transition stand stand start
+transition standStraight standStraight start
+
+transition standUpBackNao standUpBackNao start
+transition standUpFrontNao standUpFrontNao start
+
+transition wave_left wave_left start
+transition wave_right wave_right start
+
+transition yes yes start
+
+"This line must be the last one
+transition extern extern start
+
