@@ -9,6 +9,7 @@ import PIL.Image
 import os
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial.transform import Rotation
+from scipy.stats import vonmises
 from motoflex_gym.kinematics import *
 import random
 
@@ -28,7 +29,12 @@ class MoToFlexEnv(gym.Env):
                  random_push=None,
                  render_mode=None,  
                  config_path='config/50.cfg',
-                 ab_filter_alpha=None):
+                 ab_filter_alpha=None,
+                 #The following parameters are added for periodic reward composition as fractions of a cycle time normalized to 1
+                 start_time_left_swing=0.25,
+                 start_time_right_swing=0.75,
+                 vonmises_kappa = 32,
+                 ):
         super(MoToFlexEnv, self).__init__()
         self.time = 0
         self.rewards = []
@@ -42,6 +48,9 @@ class MoToFlexEnv(gym.Env):
         self.action_space = action_space
         self.action_function = action_function
         self.random_push = random_push
+        self.start_time_left_swing = np.pi*start_time_left_swing
+        self.start_time_right_swing = np.pi*start_time_right_swing
+        self.vonmises_kappa = vonmises_kappa
         notebook_path = os.path.dirname(os.path.abspath(__file__))
         os.chdir(notebook_path + "/../../")
 
@@ -91,13 +100,26 @@ class MoToFlexEnv(gym.Env):
 
         return observation, info
     
-    def _reward(self, last_action):
+    def _reward(self, last_action, cycle_time):
         obs = self._get_obs()
         self.rewards = []
         for f in self.reward_functions:
-            self.rewards.append(f(obs, last_action))
+            self.rewards.append(f(obs, last_action, cycle_time))
 
         return (sum(self.rewards))
+    
+    def compute_expected_phase_value(cycle_time):
+        #for Von Mises distribution cycle time must be normalized to pi (since we only use the positive half of the distribution)
+        cycle_time *= np.pi
+
+        #Phase indicator is a binary value of either 0 or 1 and should change values at phase boundaries
+        #so the expected value is equal to  P(Ai < cycle time < Bi) = P(Ai < cycle time) * 1 - P(Bi < cycle time)
+        #where Ai and Bi are random variables drawn from the von Mises distributions with the start times of the left and right swing phase as mean
+        prob1 = vonmises.pdf(cycle_time, self.vonmises_kappa, loc=self.start_time_left_swing)
+        prob2 = 1-vonmises.pdf(cycle_time, self.vonmises_kappa, loc=self.start_time_right_swing)
+
+        return prob1 * prob2
+
     
     @staticmethod
     def _random_from_range(range):
@@ -138,7 +160,19 @@ class MoToFlexEnv(gym.Env):
         # Make sure at least one foot has contact to ground
         contact = WalkingSimulator.foot_contact(0) or  WalkingSimulator.foot_contact(1)
 
-        truncated = not WalkingSimulator.is_running() or not contact;
+        truncated = not WalkingSimulator.is_running() or not contact
+
+        #Simulation runs with 100 Hz and robot should do two steps per foot per second so one cycle period should be 0.5 seconds.
+        cycle_time = self.time % 51 / 50 * np.pi
+        left_swing_phase_value = self.compute_expected_phase_value((cycle_time + self.start_time_left_swing)%1)
+        left_stance_phase_value = 1 - left_swing_phase_value
+        right_swing_phase_value = self.compute_expected_phase_value((cycle_time + self.start_time_right_swing)%1)
+        right_stance_phase_value = 1 - right_swing_phase_value
+        c_frc_left = left_swing_phase_value * -1
+        c_spd_left = left_stance_phase_value * -1
+        c_frc_right = right_swing_phase_value * -1
+        c_spd_right = right_stance_phase_value * -1
+
         reward = self._reward(delta_action)
         observation = self._get_obs()
         info = self._get_info()

@@ -32,7 +32,7 @@ obs_terms = lambda: {
     }
 
 rew_terms = [ 
-    lambda _, __: 2,
+    lambda _, __, _: 2,
     lambda obs, _: - 50 * np.sum(np.abs(obs["current_body_pos"][2] - obs["target_com_pos"][2])),
     lambda obs, _: - 1 * np.sum(np.abs(obs['current_lin_vel'] - obs['target_lin_vel'])),
     lambda _, last_action: - 0.01 * np.sum(np.abs(last_action)),
@@ -58,6 +58,7 @@ def make_env():
                 action_function = action_function,
                 ab_filter_alpha = 0.1,
                 random_push = random_push
+
                 )
     env = Monitor(env)  # record stats such as returns
     return env
