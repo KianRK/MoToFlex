@@ -407,6 +407,25 @@ Vector3<double> Nao::getVelocity()
 	getVelocity(v);
 	return Vector3<double>(v[0], v[1], v[2]);
 }
+	/**
+	 * METHOD ADDED FOR PERIODIC REWARD COMPOSITION
+	*/
+Vector3<double> Nao::getLeftFootVelocity()
+{
+	dReal v[4];
+	boxes[footLeft].getVelocity(v);
+	return Vector3<double>(v[0], v[1], v[2]);
+}
+
+	/**
+	 * METHOD ADDED FOR PERIODIC REWARD COMPOSITION
+	*/
+Vector3<double> Nao::getRightFootVelocity()
+{
+	dReal v[4];
+	boxes[footRight].getVelocity(v);
+	return Vector3<double>(v[0], v[1], v[2]);
+}
 
 void Nao::getSize(int boxNum, dReal *size)
 {

@@ -200,6 +200,24 @@ static PyObject *getVelocity(PyObject *self, PyObject *args)
     return floatArrayToPy(p, sizeof(p) / sizeof(dReal));
 }
 
+static PyObject *getLeftFootVelocity(PyObject *self, PyObject *args)
+{
+    dReal p[3];
+
+    worlds[Nao::footLeft].nao.getVelocity(p);
+
+    return floatArrayToPy(p, sizeof(p) / sizeof(dReal));
+}
+
+static PyObject *getRightFootVelocity(PyObject *self, PyObject *args)
+{
+    dReal p[3];
+
+    worlds[Nao::rightLeft].nao.getVelocity(p);
+
+    return floatArrayToPy(p, sizeof(p) / sizeof(dReal));
+}
+
 static PyObject *get6DPose(PyObject *self, PyObject *args)
 {
     dReal p[6];
@@ -362,6 +380,8 @@ static PyMethodDef WalkingSimulatorMethods[] = {
     {"get_com_pos", getCoM, METH_VARARGS, "Get position of CoM of robot."},
     {"get_joint_angles", getJointAngles, METH_VARARGS, "Get the measured angles of legs."},
     {"get_velocity", getVelocity, METH_VARARGS, "Get velocity of robot, which is velocity of upper body."},
+    {"get_left_foot_velocity", getLeftFootVelocity, METH_VARARGS, "Get velocity of left foot of the robot."},
+    {"get_right_foot_velocity", getRightFootVelocity, METH_VARARGS, "Get velocity of right foot of the robot."},
     {"get_6d_pose", get6DPose, METH_VARARGS, "Get 6D pose of upper body."},
     {"get_box_6d_pose", getBox6DPose, METH_VARARGS, "Get 6D pose of body."},
     {"get_box_size", getBoxSize, METH_VARARGS, "Get size of body."},

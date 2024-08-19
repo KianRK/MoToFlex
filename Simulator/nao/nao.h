@@ -203,6 +203,20 @@ public:
 	Vector3<double> getVelocity();
 
 	/**
+	 * METHOD ADDED FOR PERIODIC REWARD COMPOSITION
+	 * Retrieves the velocity of the left foot.
+	 * \return Vector3 of the velocity.
+	 */
+	Vector3<double> getLeftFootVelocity();
+
+	/**
+	 * METHOD ADDED FOR PERIODIC REWARD COMPOSITION
+	 * Retrieves the velocity of the right foot.
+	 * \return Vector3 of the velocity.
+	 */
+	Vector3<double> getRightFootVelocity();
+
+	/**
 	 * Retrieves the flex box.
 	 * \return Vector3 of the position.
 	 */
