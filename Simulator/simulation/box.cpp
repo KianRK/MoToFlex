@@ -50,6 +50,14 @@ void Box::getVelocity(dReal *vel)
 	vel[2]=tVel[2];
 }
 
+void Box::getForce(dReal *force)
+{
+	const dReal *tForce=dBodyGetForce(boxID);
+	force[0]=tForce[0];
+	force[1]=tForce[1];
+	force[2]=tForce[2];
+}
+
 void Box::addForce(dReal fx, dReal fy, dReal fz)
 {
 	dBodyAddForce(boxID, fx, fy, fz);

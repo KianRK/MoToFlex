@@ -197,6 +197,16 @@ public:
 	void addForce(int boxNum, dReal fx, dReal fy, dReal fz);
 
 	/**
+	 * Retrieves the force of the left foot.
+	 */
+	Vector3<double> getLeftFootForce();
+
+	/**
+	 * Retrieves the force of the right foot.
+	 */
+	Vector3<double> getRightFootForce();
+
+	/**
 	 * Retrieves position of the body.
 	 * \return Vector3 of the position.
 	 */

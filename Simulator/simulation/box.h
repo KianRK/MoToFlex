@@ -43,6 +43,7 @@ public:
 	void getOrientation(dReal *rotation);
 	void getPosition(dReal *pos);
 	void getVelocity(dReal *vel);
+	void getForce(dReal *force);
 	void addForce(dReal fx, dReal fy, dReal fz);
 	float getWeight() { return (float)m.mass; }
 	dReal* getSize() { return size; }
