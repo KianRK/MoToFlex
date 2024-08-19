@@ -28,7 +28,7 @@ obs_terms = lambda: {
     "current_polar_coords": MoToFlexEnv.current_polar_pos(),
     "current_body_orientation": np.array(WalkingSimulator.get_6d_pose()[3:]),
     "target_com_pos": np.array([0, 0, 0.34], dtype='float64'),
-    "target_lin_vel": np.array([0.5f, 0, 0], dtype='float64')
+    "target_lin_vel": np.array([0.5, 0, 0], dtype='float64')
     }
 
 rew_terms = [ 
