@@ -41,8 +41,10 @@ public:
 	dBodyID getID();
 	RotationMatrix getRotationMatrix();
 	void getOrientation(dReal *rotation);
+	void getBodyOrientationQuaternion(dReal *quat);
 	void getPosition(dReal *pos);
 	void getVelocity(dReal *vel);
+	void getAngularVelocity(dReal *vel);
 	void getForce(dReal *force);
 	void addForce(dReal fx, dReal fy, dReal fz);
 	float getWeight() { return (float)m.mass; }

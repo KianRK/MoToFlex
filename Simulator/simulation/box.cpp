@@ -34,6 +34,15 @@ void Box::setColor(float r, float g, float b)
 	this->b=b;
 }
 
+void Box::getBodyOrientationQuaternion(dReal *quat)
+{
+	const dReal *ori=dBodyGetQuaternion(boxID);
+	quat[0]=ori[0];
+	quat[1]=ori[1];
+	quat[2]=ori[2];
+	quat[3]=ori[3];
+}
+
 void Box::getPosition(dReal *pos)
 {
 	const dReal *tPos=dBodyGetPosition(boxID);
@@ -45,6 +54,14 @@ void Box::getPosition(dReal *pos)
 void Box::getVelocity(dReal *vel)
 {
 	const dReal *tVel=dBodyGetLinearVel(boxID);
+	vel[0]=tVel[0];
+	vel[1]=tVel[1];
+	vel[2]=tVel[2];
+}
+
+void Box::getAngularVelocity(dReal *vel)
+{
+	const dReal *tVel=dBodyGetAngularVel(boxID);
 	vel[0]=tVel[0];
 	vel[1]=tVel[1];
 	vel[2]=tVel[2];

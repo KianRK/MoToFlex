@@ -348,6 +348,12 @@ Joint *Nao::getJoint(int motorID)
 	return NULL;
 }
 
+void Nao::getBodyOrientationQuaternion(dReal *quat)
+{
+	if (!created) return;
+	boxes[body].getBodyOrientationQuaternion(quat);
+}
+
 void Nao::getOrientation(int boxNum, dReal *orientation)
 {
 	if (!created) return;
@@ -380,6 +386,12 @@ void Nao::getVelocity(dReal *velocity)
 {
 	if (!created) return;
 	boxes[body].getVelocity(velocity);
+}
+
+void Nao::getAngularVelocity(dReal *velocity)
+{
+	if (!created) return;
+	boxes[body].getAngularVelocity(velocity);
 }
 
 void Nao::getPosition(int boxNum, dReal *position)
@@ -489,6 +501,27 @@ void Nao::getAngles(float angles[])
 	angles[leftArm]=shoulder[leftArm].getAngle(2);
 	angles[rightArm]=shoulder[rightArm].getAngle(1);
 	angles[rightArm]=shoulder[rightArm].getAngle(2);
+#endif
+}
+
+void Nao::getJointVelocities(float angles[])
+{
+	angles[lHipRoll]=hip[leftLeg].getVelocity(1);		
+	angles[lHipPitch]=hip[leftLeg].getVelocity(2);
+	angles[lKneePitch]=knee[leftLeg].getVelocity();	  
+	angles[lAnklePitch]=ankle[leftLeg].getVelocity(1);
+	angles[lAnkleRoll]=ankle[leftLeg].getVelocity(2);
+
+	angles[rHipRoll]=hip[rightLeg].getVelocity(1);
+	angles[rHipPitch]=hip[rightLeg].getVelocity(2);
+	angles[rKneePitch]=knee[rightLeg].getVelocity();
+	angles[rAnklePitch]=ankle[rightLeg].getVelocity(1);
+	angles[rAnkleRoll]=ankle[rightLeg].getVelocity(2);	
+#ifdef MOVEABLE_ARMS
+	angles[leftArm]=shoulder[leftArm].getVelocity(1);
+	angles[leftArm]=shoulder[leftArm].getVelocity(2);
+	angles[rightArm]=shoulder[rightArm].getVelocity(1);
+	angles[rightArm]=shoulder[rightArm].getVelocity(2);
 #endif
 }
 

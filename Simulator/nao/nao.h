@@ -100,8 +100,7 @@ public:
 	 * Stops the simulation of the Nao
 	 */
 	void stop();
-
-
+v
 	/**
 	 * Draw the Nao with an offset to avoid drawing Naos of multiple space at the same place.
 	 * \param yOffset Offset along y axis.
@@ -119,6 +118,8 @@ public:
 	 * \param angles Array to fill. Number depends on used motorized joints.
 	 */
 	void getAngles(float angles[]);
+
+	void getJointVelocities(float velocities[]);
 
 	/**
 	 * Set p i and d value of the controller and set the method of joint control.
@@ -141,6 +142,8 @@ public:
 	 * \param method Method used for joint control. Speed control leads to perfect angles, torque leads to more realizm.
 	 */
 	void act(Joint::Method method);
+
+	void getBodyOrientationQuaternion(dReal *quat);
 
 	/**
 	 * Retrieves the orientation of a box.
@@ -179,6 +182,8 @@ public:
 	 * \param position Array of 3 elements to be filled with the velocity.
 	 */
 	void getVelocity(dReal *velocity);
+
+	void getAngularVelocity(dReal *velocity);
 
 	/**
 	 * Retrieves position of the body.

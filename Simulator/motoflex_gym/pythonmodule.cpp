@@ -182,6 +182,15 @@ static PyObject *getBox6DPose(PyObject *self, PyObject *args)
     return floatArrayToPy(p, sizeof(p) / sizeof(dReal));
 }
 
+static PyObject *getBodyOrientationQuaternion(PyObject *self, PyObject *args)
+{
+    dReal quat[4];
+
+    worlds[Nao::body].nao.getBodyOrientationQuaternion(quat);
+
+    return floatArrayToPy(quat, sizeof(quat) / sizeof(dReal));
+}
+
 static PyObject *getJointAngles(PyObject *self, PyObject *args)
 {
     float angles[NUM_OF_JOINTS];
@@ -191,11 +200,29 @@ static PyObject *getJointAngles(PyObject *self, PyObject *args)
     return floatArrayToPy(angles, NUM_OF_JOINTS);
 }
 
+static PyObject *getJointVelocities(PyObject *self, PyObject *args)
+{
+    float velocities[NUM_OF_JOINTS];
+
+    worlds[Nao::body].nao.getJointVelocities(velocities);
+
+    return floatArrayToPy(velocities, NUM_OF_JOINTS);
+}
+
 static PyObject *getVelocity(PyObject *self, PyObject *args)
 {
     dReal p[3];
 
     worlds[Nao::body].nao.getVelocity(p);
+
+    return floatArrayToPy(p, sizeof(p) / sizeof(dReal));
+}
+
+static PyObject *getAngularVelocity(PyObject *self,PyObject *args)
+{
+    dReal p[3];
+
+    worlds[Nao::body].nao.getAngularVelocity(p);
 
     return floatArrayToPy(p, sizeof(p) / sizeof(dReal));
 }
@@ -378,10 +405,15 @@ static PyMethodDef WalkingSimulatorMethods[] = {
     {"test", test, METH_VARARGS, "Test function."},
     {"foot_contact", footContact, METH_VARARGS, "Has the foot contact to ground?"},
     {"get_com_pos", getCoM, METH_VARARGS, "Get position of CoM of robot."},
+    {"get_body_orientation_quaternion", getBodyOrientationQuaternion, METH_VARARGS, "Get orientation of body as quaternion"}
     {"get_joint_angles", getJointAngles, METH_VARARGS, "Get the measured angles of legs."},
+    {"get_joint_velocities", getJointVelocities, METH_VARARGS, "Get the measured velocities of joints"},
     {"get_velocity", getVelocity, METH_VARARGS, "Get velocity of robot, which is velocity of upper body."},
+    {"get_angular_velocity", getAngularVelocity, METH_VARARGS, "Get angular velocity of robots upper body."},
     {"get_left_foot_velocity", getLeftFootVelocity, METH_VARARGS, "Get velocity of left foot of the robot."},
     {"get_right_foot_velocity", getRightFootVelocity, METH_VARARGS, "Get velocity of right foot of the robot."},
+    {"get_right_foot_force", getRightFootForce, METH_VARARGS, "Get force of right foot of the robot."},
+    {"get_left_foot_force", getLeftFootForce, METH_VARARGS, "Get force of left foot of the robot."},
     {"get_6d_pose", get6DPose, METH_VARARGS, "Get 6D pose of upper body."},
     {"get_box_6d_pose", getBox6DPose, METH_VARARGS, "Get 6D pose of body."},
     {"get_box_size", getBoxSize, METH_VARARGS, "Get size of body."},
