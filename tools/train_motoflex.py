@@ -25,7 +25,7 @@ obs_space = gym.spaces.Dict({
     "body_acceleration": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
     "p": gym.spaces.Box(-1, 1, shape=(2,), dtype=float)
 })
-
+ 
 obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset: {
     "current_joint_angles": np.array(WalkingSimulator.get_joint_angles()),
     "current_joint_velocities": np.array(WalkingSimulator.get_joint_velocities()),

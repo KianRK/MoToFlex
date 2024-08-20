@@ -258,7 +258,7 @@ static PyObject *getLeftFootForce(PyObject *self, PyObject *args)
 {
     dReal p[3];
 
-    worlds[Nao::footLeft].nao.getForce(p);
+    worlds[Nao::footLeft].nao.getLeftFootForce(p);
 
     return floatArrayToPy(p, sizeof(p) / sizeof(dReal));
 }
@@ -267,7 +267,7 @@ static PyObject *getRightFootForce(PyObject *self, PyObject *args)
 {
     dReal p[3];
 
-    worlds[Nao::footRight].nao.getForce(p);
+    worlds[Nao::footRight].nao.getRightFootForce(p);
 
     return floatArrayToPy(p, sizeof(p) / sizeof(dReal));
 }
@@ -432,7 +432,7 @@ static PyMethodDef WalkingSimulatorMethods[] = {
     {"test", test, METH_VARARGS, "Test function."},
     {"foot_contact", footContact, METH_VARARGS, "Has the foot contact to ground?"},
     {"get_com_pos", getCoM, METH_VARARGS, "Get position of CoM of robot."},
-    {"get_body_orientation_quaternion", getBodyOrientationQuaternion, METH_VARARGS, "Get orientation of body as quaternion"}
+    {"get_body_orientation_quaternion", getBodyOrientationQuaternion, METH_VARARGS, "Get orientation of body as quaternion"},
     {"get_joint_angles", getJointAngles, METH_VARARGS, "Get the measured angles of legs."},
     {"get_joint_velocities", getJointVelocities, METH_VARARGS, "Get the measured velocities of joints"},
     {"get_joint_torques", getJointTorques, METH_VARARGS, "Get the measured torques of joints"},
