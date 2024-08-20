@@ -406,16 +406,30 @@ void Nao::addForce(int boxNum, dReal fx, dReal fy, dReal fz)
 	boxes[boxNum].addForce(fx, fy, fz);
 }
 
-Vector3<double> Nao::getLeftFootForce()
+/**
+* METHOD ADDED FOR PERIODIC REWARD COMPOSITION
+*/
+
+Vector3<double> Nao::getLeftFootVelocity(dReal *v)
 {
-	dReal f[4];
+	boxes[footLeft].getVelocity(v);
+	return Vector3<double>(v[0], v[1], v[2]);
+}
+
+Vector3<double> Nao::getRightFootVelocity(dReal *v)
+{
+	boxes[footRight].getVelocity(v);
+	return Vector3<double>(v[0], v[1], v[2]);
+}
+
+void Nao::getLeftFootForce(dReal *f)
+{
 	boxes[footLeft].getForce(f);
 	return Vector3<double>(f[0], f[1], f[2]);
 }
 
-Vector3<double> Nao::getRightFootForce()
+void Nao::getRightFootForce(dReal *f)
 {
-	dReal f[4];
 	boxes[footRight].getForce(f);
 	return Vector3<double>(f[0], f[1], f[2]);
 }
@@ -431,25 +445,6 @@ Vector3<double> Nao::getVelocity()
 {
 	dReal v[4];
 	getVelocity(v);
-	return Vector3<double>(v[0], v[1], v[2]);
-}
-	/**
-	 * METHOD ADDED FOR PERIODIC REWARD COMPOSITION
-	*/
-Vector3<double> Nao::getLeftFootVelocity()
-{
-	dReal v[4];
-	boxes[footLeft].getVelocity(v);
-	return Vector3<double>(v[0], v[1], v[2]);
-}
-
-	/**
-	 * METHOD ADDED FOR PERIODIC REWARD COMPOSITION
-	*/
-Vector3<double> Nao::getRightFootVelocity()
-{
-	dReal v[4];
-	boxes[footRight].getVelocity(v);
 	return Vector3<double>(v[0], v[1], v[2]);
 }
 

@@ -206,12 +206,12 @@ public:
 	/**
 	 * Retrieves the force of the left foot.
 	 */
-	Vector3<double> getLeftFootForce();
+	void getLeftFootForce(dReal *f);
 
 	/**
 	 * Retrieves the force of the right foot.
 	 */
-	Vector3<double> getRightFootForce();
+	void getRightFootForce(dReal *f);
 
 	/**
 	 * Retrieves position of the body.
@@ -224,14 +224,14 @@ public:
 	 * Retrieves the velocity of the left foot.
 	 * \return Vector3 of the velocity.
 	 */
-	Vector3<double> getLeftFootVelocity();
+	void getLeftFootVelocity(dReal *v);
 
 	/**
 	 * METHOD ADDED FOR PERIODIC REWARD COMPOSITION
 	 * Retrieves the velocity of the right foot.
 	 * \return Vector3 of the velocity.
 	 */
-	Vector3<double> getRightFootVelocity();
+	void getRightFootVelocity(dReal *v);
 
 	/**
 	 * Retrieves the flex box.
