@@ -133,8 +133,8 @@ class MoToFlexEnv(gym.Env):
         #Phase indicator is a binary value of either 0 or 1 and should change values at phase boundaries
         #so the expected value is equal to  P(Ai < cycle time < Bi) = P(Ai < cycle time) * 1 - P(Bi < cycle time)
         #where Ai and Bi are random variables sampled from the von Mises distributions with the start times of the left and right swing phase as mean
-        prob1 = vonmises.pdf(cycle_time, self.vonmises_kappa, loc=np.pi*self.left_cycle_offset)
-        prob2 = 1-vonmises.pdf(cycle_time, self.vonmises_kappa, loc=np.pi*self.right_cycle_offset)
+        prob1 = vonmises.cdf(cycle_time, self.vonmises_kappa, loc=np.pi*self.left_cycle_offset)
+        prob2 = 1-vonmises.cdf(cycle_time, self.vonmises_kappa, loc=np.pi*self.right_cycle_offset)
 
         return prob1 * prob2
     
@@ -188,10 +188,10 @@ class MoToFlexEnv(gym.Env):
         #Simulation runs with 100 Hz and robot should do two steps per foot per second so one cycle period should be 0.5 seconds.
         self.cycle_time = self.time % 51 / 50
         #Modulo operation to ensure that the phase value is between 0 and 1
-        left_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.left_cycle_offset)%1),
-        left_stance_phase_value = 1 - left_swing_phase_value,
-        right_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.right_cycle_offset)%1),
-        right_stance_phase_value = 1 - right_swing_phase_value,
+        left_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.left_cycle_offset)%1)
+        left_stance_phase_value = 1 - left_swing_phase_value
+        right_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.right_cycle_offset)%1)
+        right_stance_phase_value = 1 - right_swing_phase_value
 
         periodic_reward_values = {
         "expected_c_frc_left": left_swing_phase_value * -1,
