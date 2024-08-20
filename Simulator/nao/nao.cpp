@@ -410,12 +410,12 @@ void Nao::addForce(int boxNum, dReal fx, dReal fy, dReal fz)
 * METHOD ADDED FOR PERIODIC REWARD COMPOSITION
 */
 
-Vector3<double> Nao::getLeftFootVelocity(dReal *v)
+void Nao::getLeftFootVelocity(dReal *v)
 {
 	boxes[footLeft].getVelocity(v);
 }
 
-Vector3<double> Nao::getRightFootVelocity(dReal *v)
+void Nao::getRightFootVelocity(dReal *v)
 {
 	boxes[footRight].getVelocity(v);
 }
