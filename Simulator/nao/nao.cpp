@@ -413,25 +413,21 @@ void Nao::addForce(int boxNum, dReal fx, dReal fy, dReal fz)
 Vector3<double> Nao::getLeftFootVelocity(dReal *v)
 {
 	boxes[footLeft].getVelocity(v);
-	return Vector3<double>(v[0], v[1], v[2]);
 }
 
 Vector3<double> Nao::getRightFootVelocity(dReal *v)
 {
 	boxes[footRight].getVelocity(v);
-	return Vector3<double>(v[0], v[1], v[2]);
 }
 
 void Nao::getLeftFootForce(dReal *f)
 {
 	boxes[footLeft].getForce(f);
-	return Vector3<double>(f[0], f[1], f[2]);
 }
 
 void Nao::getRightFootForce(dReal *f)
 {
 	boxes[footRight].getForce(f);
-	return Vector3<double>(f[0], f[1], f[2]);
 }
 
 Vector3<double> Nao::getPosition()
