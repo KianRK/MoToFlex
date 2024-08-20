@@ -1,5 +1,6 @@
 import gymnasium as gym
 from gymnasium import spaces
+import math
 import pygame
 import numpy as np
 from numpy.linalg import norm
@@ -138,7 +139,10 @@ class MoToFlexEnv(gym.Env):
         return prob1 * prob2
     
     def get_body_acceleration(self):
-        return norm(4*(np.array(self.current_velocity) - np.array(self.last_velocity)))
+        #multiplicated by 4 because one time step is 1/4 second
+        acc = [4*(a-b) for a, b in zip(self.current_velocity, self.last_velocity)]
+        acc_norm = math.sqrt(acc[0]**2 + acc[1]**2 + acc[2]**2)
+        return acc_norm
     
     @staticmethod
     def _random_from_range(range):
