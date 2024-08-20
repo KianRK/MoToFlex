@@ -22,7 +22,7 @@ obs_space = gym.spaces.Dict({
     "current_lin_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "target_lin_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "current_joint_torques": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
-    "body_acceleration": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
+    "body_acceleration": gym.spaces.Box(-np.inf, np.inf, shape=(), dtype=float),
     "p": gym.spaces.Box(-1, 1, shape=(2,), dtype=float)
 })
  
