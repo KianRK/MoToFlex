@@ -249,7 +249,25 @@ static PyObject *getRightFootVelocity(PyObject *self, PyObject *args)
 {
     dReal p[3];
 
-    worlds[Nao::rightLeft].nao.getVelocity(p);
+    worlds[Nao::footRight].nao.getVelocity(p);
+
+    return floatArrayToPy(p, sizeof(p) / sizeof(dReal));
+}
+
+static PyObject *getLeftFootForce(PyObject *self, PyObject *args)
+{
+    dReal p[3];
+
+    worlds[Nao::footLeft].nao.getForce(p);
+
+    return floatArrayToPy(p, sizeof(p) / sizeof(dReal));
+}
+
+static PyObject *getRightFootForce(PyObject *self, PyObject *args)
+{
+    dReal p[3];
+
+    worlds[Nao::footRight].nao.getForce(p);
 
     return floatArrayToPy(p, sizeof(p) / sizeof(dReal));
 }

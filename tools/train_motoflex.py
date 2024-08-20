@@ -6,6 +6,7 @@ from motoflex_gym.gym_world import MoToFlexEnv
 
 import gymnasium as gym
 import numpy as np
+from numpy.linalg import norm
 from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecVideoRecorder
@@ -14,29 +15,39 @@ from wandb.integration.sb3 import WandbCallback
 
 # For some more explanations, see envtest.ipynb.
 obs_space = gym.spaces.Dict({
-    "current_body_pos": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
+    "current_joint_angles": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
+    "current_joint_velocities": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
+    "current_body_orientation_quaternion": gym.spaces.Box(-1, 1, shape=(4,), dtype=float),
+    "current_angular_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "current_lin_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
-    "current_body_orientation": gym.spaces.Box(-1.57, 1.57, shape=(3,), dtype=float),
-    "current_polar_coords": gym.spaces.Box(-np.inf, np.inf, shape=(6,), dtype=float),
-    "target_com_pos": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "target_lin_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
+    "current_joint_torques": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
+    "body_acceleration": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
+    "p": gym.spaces.Box(-1, 1, shape=(2,), dtype=float)
 })
 
-obs_terms = lambda cycle_time, left_cycle_offset, right_cycle_offset: {
+obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset: {
     "current_joint_angles": np.array(WalkingSimulator.get_joint_angles()),
-    "joint_velocities": np.array(WalkingSimulator.get_joint_velocities()),
+    "current_joint_velocities": np.array(WalkingSimulator.get_joint_velocities()),
     "current_body_orientation_quaternion": np.array(WalkingSimulator.get_body_orientation_quaternion()),
     "current_angular_velocity": np.array(WalkingSimulator.get_angular_velocity()),
     "current_lin_vel": np.array(WalkingSimulator.get_velocity()),
-    "p": np.array([np.sin((2*np.sin(cycle_time+left_cycle_offset)/50)), np.sin((2*np.sin(cycle_time+right_cycle_offset)/50))], dtype='float64')
+    "target_lin_vel": np.array([0, 0, 0.05]),
+    "current_joint_torques": np.array(WalkingSimulator.get_joint_torques()),
+    "body_acceleration": np.array(env.get_body_acceleration()),
+    "p": np.array([np.sin((2*np.pi((cycle_time+left_cycle_offset)%1)/50)), np.sin((2*np.pi((cycle_time+right_cycle_offset)%1)/50))], dtype='float64')
     }
 
-rew_terms = [ 
-    lambda _, __, _: 2,
-    lambda obs, _: - 50 * np.sum(np.abs(obs["current_body_pos"][2] - obs["target_com_pos"][2])),
-    lambda obs, _: - 1 * np.sum(np.abs(obs['current_lin_vel'] - obs['target_lin_vel'])),
-    lambda _, last_action: - 0.01 * np.sum(np.abs(last_action)),
-    lambda obs, _: - 5 * np.sum(np.abs(obs['current_body_orientation'][:2]))
+rew_terms = [
+    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(0) * periodic_reward_values["expected_c_frc_left"] * norm(WalkingSimulator.get_left_foot_force())),
+    lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * norm(WalkingSimulator.get_left_foot_velocity())),
+    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_right"] * norm(WalkingSimulator.get_right_foot_force())),
+    lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * norm(WalkingSimulator.get_right_foot_velocity())),
+    lambda _, obs, __, ___: - 1 * np.sum(np.abs(obs['current_lin_vel'][0] - obs['target_lin_vel'][0])),
+    lambda env, obs, _, __: -1 *np.sum(np.abs(env.compute_quaternion_difference(obs["current_body_orientation_quaternion"]))),
+    lambda _, __, last_action, ___: -1 * np.sum(np.abs(last_action)),
+    lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_joint_torques"])),
+    lambda env, obs, _, __: -1 * np.sum(np.abs(obs["body_acceleration"])),
 ]
 
 action_space = gym.spaces.Box(-10, 10, shape=(6,), dtype=float)

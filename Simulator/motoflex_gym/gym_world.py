@@ -2,6 +2,7 @@ import gymnasium as gym
 from gymnasium import spaces
 import pygame
 import numpy as np
+from numpy.linalg import norm
 from motoflex_gym import WalkingSimulator
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import matplotlib.pyplot as plt
@@ -31,8 +32,8 @@ class MoToFlexEnv(gym.Env):
                  config_path='config/50.cfg',
                  ab_filter_alpha=None,
                  #The following parameters are added for periodic reward composition as fractions of a cycle time normalized to 1
-                 start_time_left_swing=0.25,
-                 start_time_right_swing=0.75,
+                 left_cycle_offset=0.25,
+                 right_cycle_offset=0.75,
                  vonmises_kappa = 32,
                  ):
         super(MoToFlexEnv, self).__init__()
@@ -49,9 +50,11 @@ class MoToFlexEnv(gym.Env):
         self.action_space = action_space
         self.action_function = action_function
         self.random_push = random_push
-        self.start_time_left_swing = start_time_left_swing
-        self.start_time_right_swing = start_time_right_swing
+        self.left_cycle_offset = left_cycle_offset
+        self.right_cycle_offset = right_cycle_offset
         self.vonmises_kappa = vonmises_kappa
+        self.last_velocity = [0, 0, 0]
+        self.current_velocity = [0, 0, 0]
         notebook_path = os.path.dirname(os.path.abspath(__file__))
         os.chdir(notebook_path + "/../../")
 
@@ -76,7 +79,7 @@ class MoToFlexEnv(gym.Env):
 
 
     def _get_obs(self):
-        _obs = self.observation_terms()
+        _obs = self.observation_terms(self, self.cycle_time, self.left_cycle_offset, self.right_cycle_offset)
         return _obs
 
     def _get_info(self):
@@ -103,14 +106,25 @@ class MoToFlexEnv(gym.Env):
 
         return observation, info
     
-    def _reward(self, last_action, cycle_time):
+    def _reward(self, last_action, periodic_reward_values):
         obs = self._get_obs()
         self.rewards = []
         for f in self.reward_functions:
-            self.rewards.append(f(obs, last_action, cycle_time))
+            self.rewards.append(f(self, obs, last_action, periodic_reward_values))
 
         return (sum(self.rewards))
     
+    #Compute difference between current orientation and initial orientation
+    def compute_quaternion_difference(self, current_quaternion):
+        r1 = Rotation.from_quat(current_quaternion)
+        r2 = Rotation.from_quat(self.initial_quaternion_orientation)
+
+        r_diff = r1.inv() * r2
+
+        q_diff = r_diff.as_quat()
+
+        return q_diff
+
     def compute_expected_phase_value(self, cycle_time):
         #for Von Mises distribution cycle time must be normalized to pi (since we only use the positive half of the distribution)
         cycle_time *= np.pi
@@ -118,11 +132,13 @@ class MoToFlexEnv(gym.Env):
         #Phase indicator is a binary value of either 0 or 1 and should change values at phase boundaries
         #so the expected value is equal to  P(Ai < cycle time < Bi) = P(Ai < cycle time) * 1 - P(Bi < cycle time)
         #where Ai and Bi are random variables sampled from the von Mises distributions with the start times of the left and right swing phase as mean
-        prob1 = vonmises.pdf(cycle_time, self.vonmises_kappa, loc=np.pi*self.start_time_left_swing)
-        prob2 = 1-vonmises.pdf(cycle_time, self.vonmises_kappa, loc=np.pi*self.start_time_right_swing)
+        prob1 = vonmises.pdf(cycle_time, self.vonmises_kappa, loc=np.pi*self.left_cycle_offset)
+        prob2 = 1-vonmises.pdf(cycle_time, self.vonmises_kappa, loc=np.pi*self.right_cycle_offset)
 
         return prob1 * prob2
-
+    
+    def get_body_acceleration(self):
+        return norm(4*(self.current_velocity - self.last_velocity))
     
     @staticmethod
     def _random_from_range(range):
@@ -168,17 +184,22 @@ class MoToFlexEnv(gym.Env):
         #Simulation runs with 100 Hz and robot should do two steps per foot per second so one cycle period should be 0.5 seconds.
         self.cycle_time = self.time % 51 / 50
         #Modulo operation to ensure that the phase value is between 0 and 1
-        left_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.start_time_left_swing)%1)
-        left_stance_phase_value = 1 - left_swing_phase_value
-        right_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.start_time_right_swing)%1)
-        right_stance_phase_value = 1 - right_swing_phase_value
-        c_frc_left = left_swing_phase_value * -1
-        c_spd_left = left_stance_phase_value * -1
-        c_frc_right = right_swing_phase_value * -1
-        c_spd_right = right_stance_phase_value * -1
+        left_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.left_cycle_offset)%1),
+        left_stance_phase_value = 1 - left_swing_phase_value,
+        right_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.right_cycle_offset)%1),
+        right_stance_phase_value = 1 - right_swing_phase_value,
 
-        reward = self._reward(delta_action)
+        periodic_reward_values = {
+        "expected_c_frc_left": left_swing_phase_value * -1,
+        "expected_c_spd_left": left_stance_phase_value * -1,
+        "expected_c_frc_right": right_swing_phase_value * -1,
+        "expected_c_spd_right": right_stance_phase_value * -1
+        }
+
+        self.last_velocity = self.current_velocity
+        reward = self._reward(delta_action, periodic_reward_values)
         observation = self._get_obs()
+        self.current_velocity = observation["current_lin_vel"]
         info = self._get_info()
 
         if self.render_mode == "human":
