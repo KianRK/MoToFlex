@@ -22,13 +22,13 @@ obs_space = gym.spaces.Dict({
     "target_lin_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
 })
 
-obs_terms = lambda: {
-    "current_body_pos": np.array(WalkingSimulator.get_6d_pose()[:3]),
+obs_terms = lambda cycle_time, left_cycle_offset, right_cycle_offset: {
+    "current_joint_angles": np.array(WalkingSimulator.get_joint_angles()),
+    "joint_velocities": np.array(WalkingSimulator.get_joint_velocities()),
+    "current_body_orientation_quaternion": np.array(WalkingSimulator.get_body_orientation_quaternion()),
+    "current_angular_velocity": np.array(WalkingSimulator.get_angular_velocity()),
     "current_lin_vel": np.array(WalkingSimulator.get_velocity()),
-    "current_polar_coords": MoToFlexEnv.current_polar_pos(),
-    "current_body_orientation": np.array(WalkingSimulator.get_6d_pose()[3:]),
-    "target_com_pos": np.array([0, 0, 0.34], dtype='float64'),
-    "target_lin_vel": np.array([0, 0, 0], dtype='float64')
+    "p": np.array([np.sin((2*np.sin(cycle_time+left_cycle_offset)/50)), np.sin((2*np.sin(cycle_time+right_cycle_offset)/50))], dtype='float64')
     }
 
 rew_terms = [ 

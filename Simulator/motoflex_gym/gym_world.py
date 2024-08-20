@@ -37,6 +37,7 @@ class MoToFlexEnv(gym.Env):
                  ):
         super(MoToFlexEnv, self).__init__()
         self.time = 0
+        self.cycle_time = 0
         self.rewards = []
         self.action_data = []
         self.pushes = []
@@ -48,8 +49,8 @@ class MoToFlexEnv(gym.Env):
         self.action_space = action_space
         self.action_function = action_function
         self.random_push = random_push
-        self.start_time_left_swing = np.pi*start_time_left_swing
-        self.start_time_right_swing = np.pi*start_time_right_swing
+        self.start_time_left_swing = start_time_left_swing
+        self.start_time_right_swing = start_time_right_swing
         self.vonmises_kappa = vonmises_kappa
         notebook_path = os.path.dirname(os.path.abspath(__file__))
         os.chdir(notebook_path + "/../../")
@@ -71,6 +72,8 @@ class MoToFlexEnv(gym.Env):
         self.window = None
         self.clock = None
         WalkingSimulator.init()
+        self.initial_quaternion_orientation = WalkingSimulator.get_body_orientation_quaternion()
+
 
     def _get_obs(self):
         _obs = self.observation_terms()
@@ -108,15 +111,15 @@ class MoToFlexEnv(gym.Env):
 
         return (sum(self.rewards))
     
-    def compute_expected_phase_value(cycle_time):
+    def compute_expected_phase_value(self, cycle_time):
         #for Von Mises distribution cycle time must be normalized to pi (since we only use the positive half of the distribution)
         cycle_time *= np.pi
 
         #Phase indicator is a binary value of either 0 or 1 and should change values at phase boundaries
         #so the expected value is equal to  P(Ai < cycle time < Bi) = P(Ai < cycle time) * 1 - P(Bi < cycle time)
-        #where Ai and Bi are random variables drawn from the von Mises distributions with the start times of the left and right swing phase as mean
-        prob1 = vonmises.pdf(cycle_time, self.vonmises_kappa, loc=self.start_time_left_swing)
-        prob2 = 1-vonmises.pdf(cycle_time, self.vonmises_kappa, loc=self.start_time_right_swing)
+        #where Ai and Bi are random variables sampled from the von Mises distributions with the start times of the left and right swing phase as mean
+        prob1 = vonmises.pdf(cycle_time, self.vonmises_kappa, loc=np.pi*self.start_time_left_swing)
+        prob2 = 1-vonmises.pdf(cycle_time, self.vonmises_kappa, loc=np.pi*self.start_time_right_swing)
 
         return prob1 * prob2
 
@@ -163,10 +166,11 @@ class MoToFlexEnv(gym.Env):
         truncated = not WalkingSimulator.is_running() or not contact
 
         #Simulation runs with 100 Hz and robot should do two steps per foot per second so one cycle period should be 0.5 seconds.
-        cycle_time = self.time % 51 / 50 * np.pi
-        left_swing_phase_value = self.compute_expected_phase_value((cycle_time + self.start_time_left_swing)%1)
+        self.cycle_time = self.time % 51 / 50
+        #Modulo operation to ensure that the phase value is between 0 and 1
+        left_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.start_time_left_swing)%1)
         left_stance_phase_value = 1 - left_swing_phase_value
-        right_swing_phase_value = self.compute_expected_phase_value((cycle_time + self.start_time_right_swing)%1)
+        right_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.start_time_right_swing)%1)
         right_stance_phase_value = 1 - right_swing_phase_value
         c_frc_left = left_swing_phase_value * -1
         c_spd_left = left_stance_phase_value * -1
