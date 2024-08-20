@@ -209,6 +209,15 @@ static PyObject *getJointVelocities(PyObject *self, PyObject *args)
     return floatArrayToPy(velocities, NUM_OF_JOINTS);
 }
 
+static PyObject *getJointTorques(PyObject *self, PyObject *args)
+{
+    float torques[NUM_OF_JOINTS];
+
+    worlds[Nao::body].nao.getJointTorques(torques);
+
+    return floatArrayToPy(torques, NUM_OF_JOINTS);
+}
+
 static PyObject *getVelocity(PyObject *self, PyObject *args)
 {
     dReal p[3];
@@ -408,6 +417,7 @@ static PyMethodDef WalkingSimulatorMethods[] = {
     {"get_body_orientation_quaternion", getBodyOrientationQuaternion, METH_VARARGS, "Get orientation of body as quaternion"}
     {"get_joint_angles", getJointAngles, METH_VARARGS, "Get the measured angles of legs."},
     {"get_joint_velocities", getJointVelocities, METH_VARARGS, "Get the measured velocities of joints"},
+    {"get_joint_torques", getJointTorques, METH_VARARGS, "Get the measured torques of joints"},
     {"get_velocity", getVelocity, METH_VARARGS, "Get velocity of robot, which is velocity of upper body."},
     {"get_angular_velocity", getAngularVelocity, METH_VARARGS, "Get angular velocity of robots upper body."},
     {"get_left_foot_velocity", getLeftFootVelocity, METH_VARARGS, "Get velocity of left foot of the robot."},

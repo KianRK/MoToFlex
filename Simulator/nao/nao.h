@@ -121,6 +121,8 @@ v
 
 	void getJointVelocities(float velocities[]);
 
+	void getJointTorques(float torques[]);
+
 	/**
 	 * Set p i and d value of the controller and set the method of joint control.
 	 * \param params Array of pid values, number depends on motorized joints.
