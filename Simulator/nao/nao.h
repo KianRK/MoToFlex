@@ -100,7 +100,7 @@ public:
 	 * Stops the simulation of the Nao
 	 */
 	void stop();
-v
+
 	/**
 	 * Draw the Nao with an offset to avoid drawing Naos of multiple space at the same place.
 	 * \param yOffset Offset along y axis.
