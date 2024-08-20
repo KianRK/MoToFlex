@@ -140,8 +140,8 @@ class MoToFlexEnv(gym.Env):
     
     def get_body_acceleration(self):
         #multiplicated by 4 because one time step is 1/4 second
-        acc = [4*(a-b) for a, b in zip(self.current_velocity, self.last_velocity)]
-        acc_norm = math.sqrt(acc[0]**2 + acc[1]**2 + acc[2]**2)
+        acc_norm = norm(4*(np.array(self.current_velocity) - np.array(self.last_velocity)))
+        acc_norm = acc_norm.reshape(1)
         return acc_norm
     
     @staticmethod
