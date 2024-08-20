@@ -138,7 +138,7 @@ class MoToFlexEnv(gym.Env):
         return prob1 * prob2
     
     def get_body_acceleration(self):
-        return norm(4*(self.current_velocity - self.last_velocity))
+        return norm(4*(np.array(self.current_velocity) - np.array(self.last_velocity)))
     
     @staticmethod
     def _random_from_range(range):
