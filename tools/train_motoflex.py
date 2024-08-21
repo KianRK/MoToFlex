@@ -39,6 +39,7 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset: {
     }
 
 rew_terms = [
+    lambda _, __, ___, ____: 50,
     lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(0) * periodic_reward_values["expected_c_frc_left"] * norm(WalkingSimulator.get_left_foot_force())),
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * norm(WalkingSimulator.get_left_foot_velocity())),
     lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_right"] * norm(WalkingSimulator.get_right_foot_force())),
@@ -47,7 +48,7 @@ rew_terms = [
     lambda env, obs, _, __: -1 *np.sum(np.abs(env.compute_quaternion_difference(obs["current_body_orientation_quaternion"]))),
     lambda _, __, last_action, ___: -1 * np.sum(np.abs(last_action)),
     lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_joint_torques"])),
-    lambda env, obs, _, __: -1 * np.sum(np.abs(obs["body_acceleration"])),
+    lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["body_acceleration"])),
 ]
 
 action_space = gym.spaces.Box(-10, 10, shape=(6,), dtype=float)
