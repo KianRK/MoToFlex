@@ -117,14 +117,10 @@ class MoToFlexEnv(gym.Env):
     
     #Compute difference between current orientation and initial orientation
     def compute_quaternion_difference(self, current_quaternion):
-        r1 = Rotation.from_quat(current_quaternion)
-        r2 = Rotation.from_quat(self.initial_quaternion_orientation)
+        quat_diff = np.abs(current_quaternion)-np.abs(self.initial_quaternion_orientation)
+        quat_diff_norm = np.array([norm(quat_diff)])
 
-        r_diff = r1.inv() * r2
-
-        q_diff = r_diff.as_quat()
-
-        return q_diff
+        return quat_diff_norm
 
     def compute_expected_phase_value(self, cycle_time):
         #for Von Mises distribution cycle time must be normalized to pi (since we only use the positive half of the distribution)
@@ -139,7 +135,7 @@ class MoToFlexEnv(gym.Env):
         return prob1 * prob2
     
     def get_body_acceleration(self):
-        #multiplicated by 4 because one time step is 1/4 second
+        #multiplied by 4 because one time step is 1/4 second
         acc_norm = norm(4*(np.array(self.current_velocity) - np.array(self.last_velocity)))
         acc_norm = acc_norm.reshape(1)
         return acc_norm
@@ -200,10 +196,10 @@ class MoToFlexEnv(gym.Env):
         "expected_c_spd_right": right_stance_phase_value * -1
         }
 
-        self.last_velocity = self.current_velocity
         reward = self._reward(delta_action, periodic_reward_values)
+        self.current_velocity = WalkingSimulator.get_velocity()
         observation = self._get_obs()
-        self.current_velocity = observation["current_lin_vel"]
+        self.last_velocity = self.current_velocity
         info = self._get_info()
 
         if self.render_mode == "human":

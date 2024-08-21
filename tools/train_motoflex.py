@@ -20,7 +20,7 @@ obs_space = gym.spaces.Dict({
     "current_body_orientation_quaternion": gym.spaces.Box(-1, 1, shape=(4,), dtype=float),
     "current_angular_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "current_lin_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
-    "target_lin_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
+    "target_forwards_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "current_joint_torques": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
     "body_acceleration": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
     "p": gym.spaces.Box(-1, 1, shape=(2,), dtype=float)
@@ -32,7 +32,7 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset: {
     "current_body_orientation_quaternion": np.array(WalkingSimulator.get_body_orientation_quaternion()),
     "current_angular_velocity": np.array(WalkingSimulator.get_angular_velocity()),
     "current_lin_vel": np.array(WalkingSimulator.get_velocity()),
-    "target_lin_vel": np.array([0.05, 0, 0]),
+    "target_forwards_vel": np.array([0.05, 0, 0]),
     "current_joint_torques": np.array(WalkingSimulator.get_joint_torques()),
     "body_acceleration": env.get_body_acceleration(),
     "p": np.array([np.sin((2*np.pi*((cycle_time+left_cycle_offset)%1)/50)), np.sin((2*np.pi*((cycle_time+right_cycle_offset)%1)/50))], dtype='float64')
@@ -44,11 +44,12 @@ rew_terms = [
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * norm(WalkingSimulator.get_left_foot_velocity())),
     lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_right"] * WalkingSimulator.get_right_foot_force()[2]),
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * norm(WalkingSimulator.get_right_foot_velocity())),
-    lambda _, obs, __, ___: - 1 * np.sum(np.abs(obs['target_lin_vel'][0]/obs['current_lin_vel'][0])),
+    lambda _, obs, __, ___: - 1 * np.sum(20*(obs['target_forwards_vel'][0]-['current_lin_vel'][0])),
     lambda env, obs, _, __: -1 * np.abs(np.sum((env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])))),
     lambda _, __, last_action, ___: -1 * np.sum(np.abs(last_action)),
-    lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_joint_torques"])),
-    lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["body_acceleration"])),
+    lambda _, obs, __, ___: -1 * np.abs(obs["current_lin_vel"][1]),
+    lambda _, obs, __, ___: -0.1 * np.sum(np.abs(obs["current_joint_torques"])),
+    lambda _, obs, __, ___: -0.1 * np.sum(np.abs(obs["body_acceleration"])),
 ]
 
 action_space = gym.spaces.Box(-10, 10, shape=(6,), dtype=float)
@@ -104,7 +105,7 @@ if __name__ == "__main__":
     }
     
     run = wandb.init(
-        name="velocity_ratio_plus_entropy_coeff",
+        name="punish_side_vel",
         project="sb3",
         config=all_configs,
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
