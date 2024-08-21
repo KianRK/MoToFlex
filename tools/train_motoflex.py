@@ -32,7 +32,7 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset: {
     "current_body_orientation_quaternion": np.array(WalkingSimulator.get_body_orientation_quaternion()),
     "current_angular_velocity": np.array(WalkingSimulator.get_angular_velocity()),
     "current_lin_vel": np.array(WalkingSimulator.get_velocity()),
-    "target_lin_vel": np.array([0, 0, 0.05]),
+    "target_lin_vel": np.array([0.05, 0, 0]),
     "current_joint_torques": np.array(WalkingSimulator.get_joint_torques()),
     "body_acceleration": env.get_body_acceleration(),
     "p": np.array([np.sin((2*np.pi*((cycle_time+left_cycle_offset)%1)/50)), np.sin((2*np.pi*((cycle_time+right_cycle_offset)%1)/50))], dtype='float64')
