@@ -2,6 +2,7 @@ import gymnasium as gym
 from gymnasium import spaces
 import math
 import pygame
+import json
 import numpy as np
 from numpy.linalg import norm
 from motoflex_gym import WalkingSimulator
@@ -39,6 +40,8 @@ class MoToFlexEnv(gym.Env):
                  ):
         super(MoToFlexEnv, self).__init__()
         self.time = 0
+        #print_counter nur für Test
+        self.print_counter=0
         self.cycle_time = 0
         self.rewards = []
         self.action_data = []
@@ -110,13 +113,31 @@ class MoToFlexEnv(gym.Env):
     def _reward(self, last_action, periodic_reward_values):
         obs = self._get_obs()
         self.rewards = []
-        for f in self.reward_functions:
-            self.rewards.append(f(self, obs, last_action, periodic_reward_values))
-
+        reward_log = {"bias": 0, "frc_left": 0, "spd_left": 0, "frc_right": 0, "spd_right": 0, "vel": 0, "quat": 0, "act": 0, "vel_y": 0, "torque": 0, "acc": 0}
+        for key, f in zip(reward_log.keys(),self.reward_functions):
+            val = f(self, obs, last_action, periodic_reward_values)
+            reward_log[key] = val
+            self.rewards.append(val)
+            if(self.print_counter%1000==0):
+                self.append_dict_to_file(reward_log)
+            self.print_counter+=1
         return (sum(self.rewards))
+    
+    def append_dict_to_file(self, dictionary):
+        with open("/MoToFlex/reward_log.txt", 'a') as file:
+            # Convert dictionary to JSON string
+            json_string = json.dumps(dictionary)
+            # Append JSON string to file
+            file.write(json_string + '\n\n\n')
+
     
     #Compute difference between current orientation and initial orientation
     def compute_quaternion_difference(self, current_quaternion):
+        if(self.print_counter%1000==0):
+            with open("/MoToFlex/quaternion_log.txt", 'a') as file:
+                # Convert dictionary to JSON string
+                # Append JSON string to file
+                file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\n")
         quat_diff = np.abs(current_quaternion)-np.abs(self.initial_quaternion_orientation)
         quat_diff_norm = np.array([norm(quat_diff)])
 
@@ -177,7 +198,7 @@ class MoToFlexEnv(gym.Env):
         terminated = self.time == 150
 
         # Make sure at least one foot has contact to ground
-        contact = WalkingSimulator.foot_contact(0) or  WalkingSimulator.foot_contact(1)
+        contact = WalkingSimulator.foot_contact(1) or  WalkingSimulator.foot_contact(2)
 
         truncated = not WalkingSimulator.is_running() or not contact
 
