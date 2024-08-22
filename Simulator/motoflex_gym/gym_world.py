@@ -135,8 +135,6 @@ class MoToFlexEnv(gym.Env):
     def compute_quaternion_difference(self, current_quaternion):
         if(self.print_counter%1000==0):
             with open("/MoToFlex/quaternion_log.txt", 'a') as file:
-                # Convert dictionary to JSON string
-                # Append JSON string to file
                 file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\n")
         quat_diff = np.abs(current_quaternion)-np.abs(self.initial_quaternion_orientation)
         quat_diff_norm = np.array([norm(quat_diff)])
@@ -216,6 +214,8 @@ class MoToFlexEnv(gym.Env):
         "expected_c_frc_right": right_swing_phase_value * -1,
         "expected_c_spd_right": right_stance_phase_value * -1
         }
+        if(self.time == 1):
+            self.initial_quaternion_orientation = WalkingSimulator.get_body_orientation_quaternion()
 
         reward = self._reward(delta_action, periodic_reward_values)
         self.current_velocity = WalkingSimulator.get_velocity()
