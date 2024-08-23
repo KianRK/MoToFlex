@@ -81,9 +81,10 @@ if __name__ == "__main__":
         "policy": "MultiInputPolicy",
         "gae_lambda": 0.95,
         "gamma": 0.9,
-        "n_epochs": 10,
+        "batch_size": 32,
+        "n_epochs": 4,
         "ent_coef": 0.01,
-        "learning_rate": lambda x: x * 1e-4 + (1 - x) * 1e-6,
+        "learning_rate": lambda : (0.0001, 0.0001),
         "clip_range": 0.2,
         "use_sde": True,
         "sde_sample_freq": 4,
@@ -105,7 +106,7 @@ if __name__ == "__main__":
     }
     
     run = wandb.init(
-        name="test_run_log_quat_and_rewards",
+        name="ppo_params",
         project="sb3",
         config=all_configs,
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics

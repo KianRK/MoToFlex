@@ -118,7 +118,7 @@ class MoToFlexEnv(gym.Env):
             val = f(self, obs, last_action, periodic_reward_values)
             reward_log[key] = val
             self.rewards.append(val)
-            if(self.print_counter%1000==0):
+            if(self.print_counter%10000==0):
                 self.append_dict_to_file(reward_log)
             self.print_counter+=1
         return (sum(self.rewards))
@@ -133,7 +133,7 @@ class MoToFlexEnv(gym.Env):
     
     #Compute difference between current orientation and initial orientation
     def compute_quaternion_difference(self, current_quaternion):
-        if(self.print_counter%1000==0):
+        if(self.print_counter%100000==0):
             with open("/MoToFlex/quaternion_log.txt", 'a') as file:
                 file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\n")
         quat_diff = np.abs(current_quaternion)-np.abs(self.initial_quaternion_orientation)
@@ -193,7 +193,7 @@ class MoToFlexEnv(gym.Env):
 
         WalkingSimulator.step(action)
 
-        terminated = self.time == 150
+        terminated = self.time == 300
 
         # Make sure at least one foot has contact to ground
         contact = WalkingSimulator.foot_contact(1) or  WalkingSimulator.foot_contact(2)
