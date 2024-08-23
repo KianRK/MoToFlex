@@ -77,6 +77,7 @@ def make_env():
     return env
 
 if __name__ == "__main__":
+    
     ppo_config = {
         "policy": "MultiInputPolicy",
         "gae_lambda": 0.95,
@@ -84,7 +85,7 @@ if __name__ == "__main__":
         "batch_size": 32,
         "n_epochs": 4,
         "ent_coef": 0.01,
-        "learning_rate": lambda : (0.0001, 0.0001),
+        "learning_rate": 0.0001,
         "clip_range": 0.2,
         "use_sde": True,
         "sde_sample_freq": 4,
@@ -92,7 +93,7 @@ if __name__ == "__main__":
     }
 
     config = {
-        "total_timesteps": 6e7
+        "total_timesteps": 10e7
     }
 
     all_configs = {
