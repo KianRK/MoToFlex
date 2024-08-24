@@ -39,7 +39,7 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset: {
     }
 
 rew_terms = [
-    lambda _, __, ___, ____: 30,
+    lambda _, __, ___, ____: 15,
     lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_left"]),
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * norm(WalkingSimulator.get_left_foot_velocity())),
     lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]),
