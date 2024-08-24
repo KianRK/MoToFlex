@@ -59,6 +59,7 @@ class MoToFlexEnv(gym.Env):
         self.vonmises_kappa = vonmises_kappa
         self.last_velocity = [0, 0, 0]
         self.current_velocity = [0, 0, 0]
+        self.last_action = np.zeros(10)
         notebook_path = os.path.dirname(os.path.abspath(__file__))
         os.chdir(notebook_path + "/../../")
 
@@ -169,7 +170,10 @@ class MoToFlexEnv(gym.Env):
     def step(self, data):
         self.action_data = data
 
-        action, delta_action = self.action_function(data, self)
+        delta_action = data - self.last_action
+        self.last_action = data
+
+        action = self.action_function(data)
 
         if type(action) == np.ndarray:
             action = action.tolist()

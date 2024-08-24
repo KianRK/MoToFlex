@@ -7,7 +7,7 @@ from motoflex_gym.gym_world import MoToFlexEnv
 import gymnasium as gym
 import numpy as np
 from numpy.linalg import norm
-from stable_baselines3 import PPO
+from sb3_contrib import RecurrentPPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecVideoRecorder
 import wandb
@@ -51,10 +51,12 @@ rew_terms = [
     lambda _, obs, __, ___: -0.01 * np.sum(np.abs(obs["current_joint_torques"])),
     lambda _, obs, __, ___: -0.1 * np.sum(np.abs(obs["body_acceleration"])),
 ]
+action_space = gym.spaces.Box( low=np.array([-0.38, -1.56, -0.09, -1.19, -0.4, -0.79, -1.56, -0.09, -1.19, -0.77]),
+        high=np.array([0.79, 0.48, 2.11, 0.92, 0.77, 0.38, 0.48, 2.12, 0.93, 0.4]),
+        dtype=float)
+#action_space = gym.spaces.Box(-10, 10, shape=(10,), dtype=float)
 
-action_space = gym.spaces.Box(-10, 10, shape=(6,), dtype=float)
-
-action_function = lambda d, env: (env.delta_polar_to_angles(*d / 100), d.tolist())
+action_function = lambda d: (d.tolist())
 
 random_push = {
     "probability": 0.01,
@@ -78,27 +80,31 @@ def make_env():
 
 if __name__ == "__main__":
     
-    ppo_config = {
-        "policy": "MultiInputPolicy",
+    multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[300, 300])
+
+    recurrent_ppo_config = {
+        "policy": "MultiInputLstmPolicy",
         "gae_lambda": 0.95,
-        "gamma": 0.9,
+        "gamma": 0.99,
+        "n_steps": 1024,
         "batch_size": 32,
         "n_epochs": 4,
         "ent_coef": 0.01,
         "learning_rate": 0.0001,
         "clip_range": 0.2,
         "use_sde": True,
+        "policy_kwargs": multi_input_lstm_policy_config,
         "sde_sample_freq": 4,
         "verbose": 1,
     }
 
     config = {
-        "total_timesteps": 10e7
+        "total_timesteps": 15e7
     }
 
     all_configs = {
         "learn_conf": config,
-        "ppo_config": ppo_config,
+        "recurrent_ppo_config": recurrent_ppo_config,
         "reward_terms": rew_terms,
         "observation_space": obs_space,
         "observation_terms": obs_terms,
@@ -107,7 +113,7 @@ if __name__ == "__main__":
     }
     
     run = wandb.init(
-        name="ppo_params",
+        name="recurrent-ppo",
         project="sb3",
         config=all_configs,
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
@@ -126,9 +132,9 @@ if __name__ == "__main__":
         record_video_trigger=lambda x: x % 30000 == 0,
         video_length=200,
     )
-    model = PPO(
+    model = RecurrentPPO(
         env=env,
-        **ppo_config,
+        **recurrent_ppo_config,
         tensorboard_log=f"tmp/runs/{run.id}"
         )
 
