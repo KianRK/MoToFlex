@@ -15,8 +15,8 @@ from wandb.integration.sb3 import WandbCallback
 
 # For some more explanations, see envtest.ipynb.
 obs_space = gym.spaces.Dict({
-    "left_foot_contact:": gym.spaces.Discrete(2),
-    "right_foot_contact:": gym.spaces.Discrete(2),
+    "left_foot_contact": gym.spaces.Discrete(2),
+    "right_foot_contact": gym.spaces.Discrete(2),
     "current_joint_angles": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
     "current_joint_velocities": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
     "current_body_orientation_quaternion": gym.spaces.Box(-1, 1, shape=(4,), dtype=float),
