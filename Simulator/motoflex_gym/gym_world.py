@@ -80,11 +80,12 @@ class MoToFlexEnv(gym.Env):
         self.window = None
         self.clock = None
         WalkingSimulator.init()
-        self.initial_quaternion_orientation = WalkingSimulator.get_body_orientation_quaternion()
 
 
     def _get_obs(self):
         _obs = self.observation_terms(self, self.cycle_time, self.left_cycle_offset, self.right_cycle_offset)
+        if(self.print_counter%5000==0):
+            self.append_dict_to_file("obs_log.txt",_obs)
         return _obs
 
     def _get_info(self):
@@ -115,30 +116,31 @@ class MoToFlexEnv(gym.Env):
         obs = self._get_obs()
         self.rewards = []
         reward_log = {"bias": 0, "frc_left": 0, "spd_left": 0, "frc_right": 0, "spd_right": 0, "vel": 0, "quat": 0, "act": 0, "vel_y": 0, "torque": 0, "acc": 0}
-        for key, f in zip(reward_log.keys(),self.reward_functions):
+        for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
-            reward_log[key] = val
             self.rewards.append(val)
-            if(self.print_counter%10000==0):
-                self.append_dict_to_file(reward_log)
-            self.print_counter+=1
+        if(self.print_counter%5000==0):
+            for key, val in zip(reward_log.keys(),self.rewards):
+                reward_log[key] = val
+            self.append_dict_to_file("reward_log.txt",reward_log)
+        
         return (sum(self.rewards))
     
-    def append_dict_to_file(self, dictionary):
-        with open("/MoToFlex/reward_log.txt", 'a') as file:
-            # Convert dictionary to JSON string
-            json_string = json.dumps(dictionary)
-            # Append JSON string to file
-            file.write(json_string + '\n\n\n')
+    def append_dict_to_file(self, filename, dictionary):
+            with open(f"/MoToFlex/{filename}", 'a') as file:
+                # Convert dictionary to JSON string
+                json_string = json.dumps(dictionary)
+                # Append JSON string to file
+                file.write(json_string + '\n\n\n')
 
     
     #Compute difference between current orientation and initial orientation
     def compute_quaternion_difference(self, current_quaternion):
-        if(self.print_counter%100000==0):
-            with open("/MoToFlex/quaternion_log.txt", 'a') as file:
-                file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\n")
         quat_diff = np.abs(current_quaternion)-np.abs(self.initial_quaternion_orientation)
         quat_diff_norm = np.array([norm(quat_diff)])
+        if(self.print_counter%10000==0):
+            with open("/MoToFlex/quaternion_log.txt", 'a') as file:
+                file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\nquat_diff: {quat_diff}\nquat_diff_norm: {quat_diff_norm}\n\n\n")
 
         return quat_diff_norm
 
@@ -226,6 +228,8 @@ class MoToFlexEnv(gym.Env):
         observation = self._get_obs()
         self.last_velocity = self.current_velocity
         info = self._get_info()
+
+        self.print_counter+=1
 
         if self.render_mode == "human":
             self._render_frame()
