@@ -127,6 +127,9 @@ class MoToFlexEnv(gym.Env):
         return (sum(self.rewards))
     
     def append_dict_to_file(self, filename, dictionary):
+            for key, value in dictionary.items():
+                if isinstance(value, np.ndarray):
+                    dictionary[key] = value.tolist()
             with open(f"/MoToFlex/{filename}", 'a') as file:
                 # Convert dictionary to JSON string
                 json_string = json.dumps(dictionary)
