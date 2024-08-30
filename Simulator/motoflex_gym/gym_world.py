@@ -3,6 +3,7 @@ from gymnasium import spaces
 import math
 import pygame
 import json
+import copy
 import numpy as np
 from numpy.linalg import norm
 from motoflex_gym import WalkingSimulator
@@ -36,7 +37,7 @@ class MoToFlexEnv(gym.Env):
                  #The following parameters are added for periodic reward composition as fractions of a cycle time normalized to 1
                  left_cycle_offset=0.25,
                  right_cycle_offset=0.75,
-                 vonmises_kappa = 32,
+                 vonmises_kappa = 90,
                  ):
         super(MoToFlexEnv, self).__init__()
         self.time = 0
@@ -80,12 +81,11 @@ class MoToFlexEnv(gym.Env):
         self.window = None
         self.clock = None
         WalkingSimulator.init()
+        self.initial_quaternion_orientation = [1,1,1,0]
 
 
     def _get_obs(self):
         _obs = self.observation_terms(self, self.cycle_time, self.left_cycle_offset, self.right_cycle_offset)
-        if(self.print_counter%5000==0):
-            self.append_dict_to_file("obs_log.txt",_obs)
         return _obs
 
     def _get_info(self):
@@ -100,7 +100,8 @@ class MoToFlexEnv(gym.Env):
 
         self.last_polar = None
         self.pushes = []
-
+        log_obs = self._get_obs()
+        self.append_dict_to_file("obs_log.txt",log_obs)
         observation = self._get_obs()
         info = self._get_info()
         
@@ -125,18 +126,27 @@ class MoToFlexEnv(gym.Env):
             self.append_dict_to_file("reward_log.txt",reward_log)
         
         return (sum(self.rewards))
-    
-    def append_dict_to_file(self, filename, dictionary):
-            for key, value in dictionary.items():
-                if isinstance(value, np.ndarray):
-                    dictionary[key] = value.tolist()
-            with open(f"/MoToFlex/{filename}", 'a') as file:
-                # Convert dictionary to JSON string
-                json_string = json.dumps(dictionary)
-                # Append JSON string to file
-                file.write(json_string + '\n\n\n')
 
-    
+    def append_dict_to_file(self, filename, dictionary):
+        for key, value in dictionary.items():
+            if isinstance(value, np.ndarray):
+                value = value.tolist()
+                for val in value:
+                    if isinstance(val, np.int64):
+                        val = int(val)
+                    if isinstance(val, np.float64):
+                        val = float(val)
+                dictionary[key] = value
+            elif isinstance(value, np.int64):
+                dictionary[key] = int(value)
+            elif isinstance(value, np.float64):
+                dictionary[key] = float(value)
+        with open(f"/MoToFlex/{filename}", 'a') as file:
+            # Convert dictionary to JSON string
+            json_string = json.dumps(dictionary)
+            # Append JSON string to file
+            file.write(json_string + '\n\n\n')
+     
     #Compute difference between current orientation and initial orientation
     def compute_quaternion_difference(self, current_quaternion):
         quat_diff = np.abs(current_quaternion)-np.abs(self.initial_quaternion_orientation)
@@ -205,9 +215,9 @@ class MoToFlexEnv(gym.Env):
         terminated = self.time == 300
 
         # Make sure at least one foot has contact to ground
-        contact = WalkingSimulator.foot_contact(1) or  WalkingSimulator.foot_contact(2)
-
-        truncated = not WalkingSimulator.is_running() or not contact
+        #contact = WalkingSimulator.foot_contact(1) or  WalkingSimulator.foot_contact(2)
+        standing = WalkingSimulator.get_6d_pose()[2]>0.25
+        truncated = not WalkingSimulator.is_running() or not standing
 
         #Simulation runs with 100 Hz and robot should do two steps per foot per second so one cycle period should be 0.5 seconds.
         self.cycle_time = self.time % 51 / 50

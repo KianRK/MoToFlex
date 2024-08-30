@@ -17,7 +17,10 @@ from wandb.integration.sb3 import WandbCallback
 obs_space = gym.spaces.Dict({
     "left_foot_contact": gym.spaces.Discrete(2),
     "right_foot_contact": gym.spaces.Discrete(2),
-    "current_joint_angles": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
+    #"current_joint_angles": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
+    "current_joint_angles": gym.spaces.Box(np.array([-0.38, -1.56, -0.09, -1.19, -0.4, -0.79, -1.56, -0.09, -1.19, -0.77]),
+        np.array([0.79, 0.48, 2.11, 0.92, 0.77, 0.38, 0.48, 2.12, 0.93, 0.4]), shape=(10,),
+        dtype=float),
     "current_joint_velocities": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
     "current_body_orientation_quaternion": gym.spaces.Box(-1, 1, shape=(4,), dtype=float),
     "current_angular_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
@@ -29,8 +32,8 @@ obs_space = gym.spaces.Dict({
 })
  
 obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset: {
-    "left_foot_contact:": np.sum(WalkingSimulator.foot_contact(1)),
-    "right_foot_contact:": np.sum(WalkingSimulator.foot_contact(2)), 
+    "left_foot_contact": np.sum(WalkingSimulator.foot_contact(1)),
+    "right_foot_contact": np.sum(WalkingSimulator.foot_contact(2)), 
     "current_joint_angles": np.array(WalkingSimulator.get_joint_angles()),
     "current_joint_velocities": np.array(WalkingSimulator.get_joint_velocities()),
     "current_body_orientation_quaternion": np.array(WalkingSimulator.get_body_orientation_quaternion()),
@@ -94,7 +97,7 @@ if __name__ == "__main__":
         "batch_size": 32,
         "n_epochs": 4,
         "ent_coef": 0.01,
-        "learning_rate": 0.0001,
+        "learning_rate": 0.0003,
         "clip_range": 0.2,
         "use_sde": True,
         "policy_kwargs": multi_input_lstm_policy_config,
@@ -134,7 +137,7 @@ if __name__ == "__main__":
         env,
         f"tmp/videos/{run.id}",
         record_video_trigger=lambda x: x % 30000 == 0,
-        video_length=200,
+        video_length=300,
     )
     model = RecurrentPPO(
         env=env,
