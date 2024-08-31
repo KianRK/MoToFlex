@@ -82,10 +82,12 @@ class MoToFlexEnv(gym.Env):
         self.clock = None
         WalkingSimulator.init()
         self.initial_quaternion_orientation = [1,1,1,0]
-
+        self.current_angles = np.zeros(shape=(10,), dtype='float64')
+        self.acceleration = np.array([0], dtype='float64')
+        self.joint_velocities = np.zeros(shape=(10,), dtype='float64')
 
     def _get_obs(self):
-        _obs = self.observation_terms(self, self.cycle_time, self.left_cycle_offset, self.right_cycle_offset)
+        _obs = self.observation_terms(self, self.cycle_time, self.left_cycle_offset, self.right_cycle_offset, self.current_angles, self.acceleration, self.joint_velocities)
         return _obs
 
     def _get_info(self):
@@ -101,7 +103,8 @@ class MoToFlexEnv(gym.Env):
         self.last_polar = None
         self.pushes = []
         log_obs = self._get_obs()
-        self.append_dict_to_file("obs_log.txt",log_obs)
+        if self.print_counter%50==0:
+            self.append_dict_to_file("obs_log.txt",log_obs)
         observation = self._get_obs()
         info = self._get_info()
         
@@ -215,9 +218,9 @@ class MoToFlexEnv(gym.Env):
         terminated = self.time == 300
 
         # Make sure at least one foot has contact to ground
-        #contact = WalkingSimulator.foot_contact(1) or  WalkingSimulator.foot_contact(2)
+        contact = WalkingSimulator.foot_contact(1) or  WalkingSimulator.foot_contact(2)
         standing = WalkingSimulator.get_6d_pose()[2]>0.25
-        truncated = not WalkingSimulator.is_running() or not standing
+        truncated = not WalkingSimulator.is_running() or not standing or not contact
 
         #Simulation runs with 100 Hz and robot should do two steps per foot per second so one cycle period should be 0.5 seconds.
         self.cycle_time = self.time % 51 / 50
@@ -238,9 +241,17 @@ class MoToFlexEnv(gym.Env):
 
         reward = self._reward(delta_action, periodic_reward_values)
         self.current_velocity = WalkingSimulator.get_velocity()
+        self.current_angles = WalkingSimulator.get_joint_angles()
+        self.acceleration = self.get_body_acceleration()
+        self.joint_velocities = WalkingSimulator.get_joint_velocities()
+
         observation = self._get_obs()
         self.last_velocity = self.current_velocity
         info = self._get_info()
+
+        if self.print_counter%50==0:
+            with open("angle_logs.txt",'a') as file:
+                file.write(f"angles at step {self.time}: {self.current_angles}\n\n")
 
         self.print_counter+=1
 

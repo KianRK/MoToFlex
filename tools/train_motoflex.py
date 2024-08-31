@@ -31,17 +31,17 @@ obs_space = gym.spaces.Dict({
     "p": gym.spaces.Box(-1, 1, shape=(2,), dtype=float)
 })
  
-obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset: {
+obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angles, acceleration, joint_velocities: {
     "left_foot_contact": np.sum(WalkingSimulator.foot_contact(1)),
     "right_foot_contact": np.sum(WalkingSimulator.foot_contact(2)), 
-    "current_joint_angles": np.array(WalkingSimulator.get_joint_angles()),
-    "current_joint_velocities": np.array(WalkingSimulator.get_joint_velocities()),
+    "current_joint_angles": np.array(angles),
+    "current_joint_velocities": np.array(joint_velocities),
     "current_body_orientation_quaternion": np.array(WalkingSimulator.get_body_orientation_quaternion()),
     "current_angular_velocity": np.array(WalkingSimulator.get_angular_velocity()),
     "current_lin_vel": np.array(WalkingSimulator.get_velocity()),
     "target_forwards_vel": np.array([0.05, 0, 0]),
     "current_joint_torques": np.array(WalkingSimulator.get_joint_torques()),
-    "body_acceleration": env.get_body_acceleration(),
+    "body_acceleration": np.array(acceleration),
     "p": np.array([np.sin((2*np.pi*((cycle_time+left_cycle_offset)%1)/50)), np.sin((2*np.pi*((cycle_time+right_cycle_offset)%1)/50))], dtype='float64')
     }
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         "batch_size": 32,
         "n_epochs": 4,
         "ent_coef": 0.01,
-        "learning_rate": 0.0003,
+        "learning_rate": 0.0001,
         "clip_range": 0.2,
         "use_sde": True,
         "policy_kwargs": multi_input_lstm_policy_config,
