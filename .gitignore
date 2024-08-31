@@ -10,3 +10,7 @@ wandb
 tmp
 .venv
 Normal.ftn
+quaternion_log.txt
+reward_log.txt
+obs_log.txt
+angle_logs.txt
