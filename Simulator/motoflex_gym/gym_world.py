@@ -89,7 +89,7 @@ class MoToFlexEnv(gym.Env):
         self.joint_velocities = np.zeros(shape=(10,), dtype='float64')
         self.left_foot_contact=True
         self.right_foot_contact=True
-        self.joint_torques = np.zeros(shape=(10,0),dtype='float64')
+        self.joint_torques = np.zeros(shape=(10,),dtype='float64')
 
         
 
@@ -233,7 +233,7 @@ class MoToFlexEnv(gym.Env):
 
         #Simulation runs with 100 Hz and robot should do two steps per foot per second so one cycle period should be 0.5 seconds.
         self.cycle_time = self.time % 51 / 50
-        #Modulo operation to ensure that the phase value is between 0 and 1
+        #ModulContacto operation to ensure that the phase value is between 0 and 1
         left_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.left_cycle_offset)%1)
         left_stance_phase_value = 1 - left_swing_phase_value
         right_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.right_cycle_offset)%1)
@@ -254,7 +254,7 @@ class MoToFlexEnv(gym.Env):
         self.acceleration = self.get_body_acceleration()
         self.joint_velocities = WalkingSimulator.get_joint_velocities()
         self.body_orientation_quat = WalkingSimulator.get_body_orientation_quaternion()
-        self.angular_velocity = WalkingSimulator.get_angular_velocity()
+        self.angular_vel = WalkingSimulator.get_angular_velocity()
         self.joint_torques = WalkingSimulator.get_joint_torques()
 
         observation = self._get_obs()
