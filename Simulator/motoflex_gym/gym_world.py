@@ -35,8 +35,8 @@ class MoToFlexEnv(gym.Env):
                  config_path='config/50.cfg',
                  ab_filter_alpha=None,
                  #The following parameters are added for periodic reward composition as fractions of a cycle time normalized to 1
-                 left_cycle_offset=0.25,
-                 right_cycle_offset=0.75,
+                 left_cycle_offset=0.1,
+                 right_cycle_offset=0.6,
                  vonmises_kappa = 90,
                  ):
         super(MoToFlexEnv, self).__init__()
@@ -82,12 +82,19 @@ class MoToFlexEnv(gym.Env):
         self.clock = None
         WalkingSimulator.init()
         self.initial_quaternion_orientation = [1,1,1,0]
+        self.body_orientation_quat = [1,1,1,0]
+        self.angular_vel=np.zeros(shape=(3,), dtype='float64')
         self.current_angles = np.zeros(shape=(10,), dtype='float64')
         self.acceleration = np.array([0], dtype='float64')
         self.joint_velocities = np.zeros(shape=(10,), dtype='float64')
+        self.left_foot_contact=True
+        self.right_foot_contact=True
+        self.joint_torques = np.zeros(shape=(10,0),dtype='float64')
+
+        
 
     def _get_obs(self):
-        _obs = self.observation_terms(self, self.cycle_time, self.left_cycle_offset, self.right_cycle_offset, self.current_angles, self.acceleration, self.joint_velocities)
+        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset, angles=self.current_angles, acceleration= self.acceleration, joint_velocities=self.joint_velocities, left_foot_contact=self.left_foot_contact,right_foot_contact=self.right_foot_contact, body_quat=self.body_orientation_quat, angular_vel=self.angular_vel, current_vel=self.current_velocity, joint_torques=self.joint_torques)
         return _obs
 
     def _get_info(self):
@@ -217,8 +224,10 @@ class MoToFlexEnv(gym.Env):
 
         terminated = self.time == 300
 
+        self.left_foot_contact = WalkingSimulator.foot_contact(1)
+        self.right_foot_contact = WalkingSimulator.foot_contact(2)
         # Make sure at least one foot has contact to ground
-        contact = WalkingSimulator.foot_contact(1) or  WalkingSimulator.foot_contact(2)
+        contact = self.left_foot_contact or self.right_foot_contact
         standing = WalkingSimulator.get_6d_pose()[2]>0.25
         truncated = not WalkingSimulator.is_running() or not standing or not contact
 
@@ -244,6 +253,9 @@ class MoToFlexEnv(gym.Env):
         self.current_angles = WalkingSimulator.get_joint_angles()
         self.acceleration = self.get_body_acceleration()
         self.joint_velocities = WalkingSimulator.get_joint_velocities()
+        self.body_orientation_quat = WalkingSimulator.get_body_orientation_quaternion()
+        self.angular_velocity = WalkingSimulator.get_angular_velocity()
+        self.joint_torques = WalkingSimulator.get_joint_torques()
 
         observation = self._get_obs()
         self.last_velocity = self.current_velocity
