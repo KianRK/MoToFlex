@@ -32,7 +32,7 @@ class MoToFlexEnv(gym.Env):
                  action_space,   
                  random_push=None,
                  render_mode=None,  
-                 config_path='config/50.cfg',
+                 config_path='config/200.cfg',
                  ab_filter_alpha=None,
                  #The following parameters are added for periodic reward composition as fractions of a cycle time normalized to 1
                  left_cycle_offset=0.1,
@@ -109,12 +109,8 @@ class MoToFlexEnv(gym.Env):
 
         self.last_polar = None
         self.pushes = []
-        log_obs = self._get_obs()
-        if self.print_counter%50==0:
-            self.append_dict_to_file("obs_log.txt",log_obs)
         observation = self._get_obs()
         info = self._get_info()
-        
 
         if self.render_mode == "human":
             self._render_frame()
@@ -130,9 +126,10 @@ class MoToFlexEnv(gym.Env):
         for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
             self.rewards.append(val)
-        if(self.print_counter%5000==0):
+        if(self.print_counter%2000==0):
             for key, val in zip(reward_log.keys(),self.rewards):
                 reward_log[key] = val
+            reward_log['cycle_time'] = str(self.cycle_time)
             self.append_dict_to_file("reward_log.txt",reward_log)
         
         return (sum(self.rewards))
@@ -228,11 +225,10 @@ class MoToFlexEnv(gym.Env):
         self.right_foot_contact = WalkingSimulator.foot_contact(2)
         # Make sure at least one foot has contact to ground
         contact = self.left_foot_contact or self.right_foot_contact
-        standing = WalkingSimulator.get_6d_pose()[2]>0.25
-        truncated = not WalkingSimulator.is_running() or not standing or not contact
+        truncated = not WalkingSimulator.is_running() or not contact
 
         #Simulation runs with 100 Hz and robot should do two steps per foot per second so one cycle period should be 0.5 seconds.
-        self.cycle_time = self.time % 51 / 50
+        self.cycle_time = self.time % 101 / 100
         #ModulContacto operation to ensure that the phase value is between 0 and 1
         left_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.left_cycle_offset)%1)
         left_stance_phase_value = 1 - left_swing_phase_value
@@ -261,9 +257,11 @@ class MoToFlexEnv(gym.Env):
         self.last_velocity = self.current_velocity
         info = self._get_info()
 
-        if self.print_counter%50==0:
+        if self.print_counter%2000==0:
             with open("angle_logs.txt",'a') as file:
                 file.write(f"angles at step {self.time}: {self.current_angles}\n\n")
+            log_obs = copy.deepcopy(observation)
+            self.append_dict_to_file("obs_log.txt",log_obs)
 
         self.print_counter+=1
 
