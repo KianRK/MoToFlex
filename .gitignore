@@ -10,13 +10,10 @@ wandb
 tmp
 .venv
 Normal.ftn
-<<<<<<< HEAD
 quaternion_log.txt
 obs_log.txt
 angle_logs.txt
 reward_log.txt
 action_logs.txt
-
-=======
 cycle_time.txt
->>>>>>> c318876... Added foot velocities and body position to observation space
+
