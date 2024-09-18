@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import PIL.Image
 import os
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from scipy.spatial.transform import Rotation
+from scipy.spatial.transform import Rotation as R
 from scipy.stats import vonmises
 from motoflex_gym.kinematics import *
 import random
@@ -81,8 +81,8 @@ class MoToFlexEnv(gym.Env):
         self.window = None
         self.clock = None
         WalkingSimulator.init()
-        self.initial_quaternion_orientation = [1,1,1,0]
-        self.body_orientation_quat = [1,1,1,0]
+        self.initial_quaternion_orientation = [1, 0.033, -0.01, 0]
+        self.body_orientation_quat = [1, 0.033, -0.01, 0]
         self.angular_vel=np.zeros(shape=(3,), dtype='float64')
         self.current_angles = np.zeros(shape=(10,), dtype='float64')
         self.acceleration = np.array([0], dtype='float64')
@@ -119,14 +119,13 @@ class MoToFlexEnv(gym.Env):
 
         return observation, info
     
-    def _reward(self, last_action, periodic_reward_values):
-        obs = self._get_obs()
+    def _reward(self, obs, last_action, periodic_reward_values):
         self.rewards = []
         reward_log = {"bias": 0, "frc_left": 0, "spd_left": 0, "frc_right": 0, "spd_right": 0, "vel": 0, "quat": 0, "act": 0, "vel_y": 0, "torque": 0, "acc": 0}
         for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
             self.rewards.append(val)
-        if(self.print_counter%2000==0):
+        if(self.print_counter%7500==0):
             for key, val in zip(reward_log.keys(),self.rewards):
                 reward_log[key] = val
             reward_log['cycle_time'] = str(self.cycle_time)
@@ -156,13 +155,14 @@ class MoToFlexEnv(gym.Env):
      
     #Compute difference between current orientation and initial orientation
     def compute_quaternion_difference(self, current_quaternion):
-        quat_diff = np.abs(current_quaternion)-np.abs(self.initial_quaternion_orientation)
-        quat_diff_norm = np.array([norm(quat_diff)])
+        current_quat = R.from_quat(current_quaternion)
+        current_quat_inv = current_quat.inv()
+        quat_diff = R.from_quat(self.initial_quaternion_orientation) * current_quat_inv
         if(self.print_counter%10000==0):
             with open("/MoToFlex/quaternion_log.txt", 'a') as file:
-                file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\nquat_diff: {quat_diff}\nquat_diff_norm: {quat_diff_norm}\n\n\n")
+                file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\nquat_diff: {quat_diff}\n\n\n")
 
-        return quat_diff_norm
+        return quat_diff.as_quat()
 
     def compute_expected_phase_value(self, cycle_time):
         #for Von Mises distribution cycle time must be normalized to pi (since we only use the positive half of the distribution)
@@ -224,16 +224,21 @@ class MoToFlexEnv(gym.Env):
         self.left_foot_contact = WalkingSimulator.foot_contact(1)
         self.right_foot_contact = WalkingSimulator.foot_contact(2)
         # Make sure at least one foot has contact to ground
+        standing = abs(WalkingSimulator.get_6d_pose()[2]-0.34) < 0.10
         contact = self.left_foot_contact or self.right_foot_contact
-        truncated = not WalkingSimulator.is_running() or not contact
+        truncated = not WalkingSimulator.is_running() or not standing or not contact
 
         #Simulation runs with 100 Hz and robot should do two steps per foot per second so one cycle period should be 0.5 seconds.
         self.cycle_time = self.time % 101 / 100
-        #ModulContacto operation to ensure that the phase value is between 0 and 1
+        #Modulo operation to ensure that the phase value is between 0 and 1
         left_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.left_cycle_offset)%1)
         left_stance_phase_value = 1 - left_swing_phase_value
         right_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.right_cycle_offset)%1)
         right_stance_phase_value = 1 - right_swing_phase_value
+        if(self.time < 300):
+            with open('cycle_time.txt', 'a') as file:
+                text = (f"Time: {self.time}\nCycle time: {self.cycle_time}\nLeft value{left_swing_phase_value}\nRight value{right_swing_phase_value}")
+                file.write(text+'\n\n\n')
 
         periodic_reward_values = {
         "expected_c_frc_left": left_swing_phase_value * -1,
@@ -244,7 +249,6 @@ class MoToFlexEnv(gym.Env):
         if(self.time == 1):
             self.initial_quaternion_orientation = WalkingSimulator.get_body_orientation_quaternion()
 
-        reward = self._reward(delta_action, periodic_reward_values)
         self.current_velocity = WalkingSimulator.get_velocity()
         self.current_angles = WalkingSimulator.get_joint_angles()
         self.acceleration = self.get_body_acceleration()
@@ -254,10 +258,11 @@ class MoToFlexEnv(gym.Env):
         self.joint_torques = WalkingSimulator.get_joint_torques()
 
         observation = self._get_obs()
+        reward = self._reward(observation, delta_action, periodic_reward_values)
         self.last_velocity = self.current_velocity
         info = self._get_info()
 
-        if self.print_counter%2000==0:
+        if self.print_counter%7500==0:
             with open("angle_logs.txt",'a') as file:
                 file.write(f"angles at step {self.time}: {self.current_angles}\n\n")
             log_obs = copy.deepcopy(observation)

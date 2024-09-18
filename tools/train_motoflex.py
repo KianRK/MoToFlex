@@ -58,7 +58,7 @@ rew_terms = [
     lambda _, obs, __, ___: -0.01 * np.sum(np.abs(obs["current_joint_torques"])),
     lambda _, obs, __, ___: -0.1 * np.sum(np.abs(obs["body_acceleration"])),
 ]
-action_space = gym.spaces.Box( low=np.array([-0.38, -1.56, -0.09, -1.19, -0.4, -0.79, -1.56, -0.09, -1.19, -0.77]),
+action_space = gym.spaces.Box(low=np.array([-0.38, -1.56, -0.09, -1.19, -0.4, -0.79, -1.56, -0.09, -1.19, -0.77]),
         high=np.array([0.79, 0.48, 2.11, 0.92, 0.77, 0.38, 0.48, 2.12, 0.93, 0.4]),
         dtype=float)
 #action_space = gym.spaces.Box(-10, 10, shape=(10,), dtype=float)
@@ -87,7 +87,7 @@ def make_env():
 
 if __name__ == "__main__":
     
-    multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[128, 128])
+    multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[128, 128, 128])
 
     recurrent_ppo_config = {
         "policy": "MultiInputLstmPolicy",
