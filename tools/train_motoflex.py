@@ -17,7 +17,10 @@ from wandb.integration.sb3 import WandbCallback
 obs_space = gym.spaces.Dict({
     "left_foot_contact": gym.spaces.Discrete(2),
     "right_foot_contact": gym.spaces.Discrete(2),
+    "left_foot_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
+    "right_foot_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
     "current_joint_angles": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
+    "current_body_position": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     #"current_joint_angles": gym.spaces.Box(np.array([-0.38, -1.56, -0.09, -1.19, -0.4, -0.79, -1.56, -0.09, -1.19, -0.77]),
   #      np.array([0.79, 0.48, 2.11, 0.92, 0.77, 0.38, 0.48, 2.12, 0.93, 0.4]), shape=(10,),
     #    dtype=float),
@@ -31,10 +34,13 @@ obs_space = gym.spaces.Dict({
     "p": gym.spaces.Box(-1, 1, shape=(2,), dtype=float)
 })
  
-obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angles, acceleration, joint_velocities, left_foot_contact, right_foot_contact, body_quat, angular_vel, current_vel, joint_torques: {
+obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angles, body_position, acceleration, joint_velocities, left_foot_contact, right_foot_contact, left_foot_vel, right_foot_vel, body_quat, angular_vel, current_vel, joint_torques: {
     "left_foot_contact": np.sum(left_foot_contact),
     "right_foot_contact": np.sum(right_foot_contact), 
+    "left_foot_velocity": np.array([left_foot_vel], dtype='float64'),
+    "right_foot_velocity": np.array([right_foot_vel], dtype='float64'),
     "current_joint_angles": np.array(angles, dtype='float64'),
+    "current_body_position": np.array(body_position, dtype='float64'),
     "current_joint_velocities": np.array(joint_velocities, dtype='float64'),
     "current_body_orientation_quaternion": np.array(body_quat, dtype='float64'),
     "current_angular_velocity": np.array(angular_vel, dtype='float64'),
@@ -51,7 +57,7 @@ rew_terms = [
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * norm(WalkingSimulator.get_left_foot_velocity())),
     lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]),
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * norm(WalkingSimulator.get_right_foot_velocity())),
-    lambda _, obs, __, ___: - 1 * np.sum(np.abs(10*(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0]))),
+    lambda _, obs, __, ___: - 1 * np.sum(np.abs(5*(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0]))),
     lambda env, obs, _, __: -3 * np.sum(env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])),
     lambda _, __, last_action, ___: -0.01 * np.sum(np.abs(last_action)),
     lambda _, obs, __, ___: -1 * np.abs(obs["current_lin_vel"][1]),
@@ -87,7 +93,7 @@ def make_env():
 
 if __name__ == "__main__":
     
-    multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[128, 128, 128])
+    multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[128, 128])
 
     recurrent_ppo_config = {
         "policy": "MultiInputLstmPolicy",
@@ -96,8 +102,8 @@ if __name__ == "__main__":
         "n_steps": 1024,
         "batch_size": 32,
         "n_epochs": 4,
-        "ent_coef": 0.01,
-        "learning_rate": 0.0001,
+        "ent_coef": 0.015,
+        "learning_rate": 0.0003,
         "clip_range": 0.2,
         "use_sde": True,
         "policy_kwargs": multi_input_lstm_policy_config,

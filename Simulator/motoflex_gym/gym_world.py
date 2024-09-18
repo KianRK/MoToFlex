@@ -89,12 +89,15 @@ class MoToFlexEnv(gym.Env):
         self.joint_velocities = np.zeros(shape=(10,), dtype='float64')
         self.left_foot_contact=True
         self.right_foot_contact=True
-        self.joint_torques = np.zeros(shape=(10,),dtype='float64')
+        self.joint_torques = np.zeros(shape=(10,), dtype='float64')
+        self.current_pose = np.zeros(shape=(6,), dtype='float64')
+        self.left_foot_vel = np.zeros(shape=(1,), dtype='float64')
+        self.right_foot_vel = np.zeros(shape=(1,), dtype='float64')
 
         
 
     def _get_obs(self):
-        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset, angles=self.current_angles, acceleration= self.acceleration, joint_velocities=self.joint_velocities, left_foot_contact=self.left_foot_contact,right_foot_contact=self.right_foot_contact, body_quat=self.body_orientation_quat, angular_vel=self.angular_vel, current_vel=self.current_velocity, joint_torques=self.joint_torques)
+        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset, angles=self.current_angles, body_position=self.current_pose[:3], acceleration= self.acceleration, joint_velocities=self.joint_velocities, left_foot_contact=self.left_foot_contact,right_foot_contact=self.right_foot_contact, left_foot_vel=self.left_foot_vel[0], right_foot_vel=self.right_foot_vel[0], body_quat=self.body_orientation_quat, angular_vel=self.angular_vel, current_vel=self.current_velocity, joint_torques=self.joint_torques)
         return _obs
 
     def _get_info(self):
@@ -219,17 +222,9 @@ class MoToFlexEnv(gym.Env):
 
         WalkingSimulator.step(action)
 
-        terminated = self.time == 300
 
-        self.left_foot_contact = WalkingSimulator.foot_contact(1)
-        self.right_foot_contact = WalkingSimulator.foot_contact(2)
-        # Make sure at least one foot has contact to ground
-        standing = abs(WalkingSimulator.get_6d_pose()[2]-0.34) < 0.10
-        contact = self.left_foot_contact or self.right_foot_contact
-        truncated = not WalkingSimulator.is_running() or not standing or not contact
-
-        #Simulation runs with 100 Hz and robot should do two steps per foot per second so one cycle period should be 0.5 seconds.
-        self.cycle_time = self.time % 101 / 100
+        #Simulation runs with 100 Hz and robot should do one step per foot per second so one cycle period should be one second.
+        self.cycle_time = self.time % 100 / 100
         #Modulo operation to ensure that the phase value is between 0 and 1
         left_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.left_cycle_offset)%1)
         left_stance_phase_value = 1 - left_swing_phase_value
@@ -249,6 +244,10 @@ class MoToFlexEnv(gym.Env):
         if(self.time == 1):
             self.initial_quaternion_orientation = WalkingSimulator.get_body_orientation_quaternion()
 
+        self.left_foot_contact = WalkingSimulator.foot_contact(1)
+        self.right_foot_contact = WalkingSimulator.foot_contact(2)
+        self.left_foot_vel = WalkingSimulator.get_left_foot_velocity()
+        self.right_foot_vel = WalkingSimulator.get_right_foot_velocity()
         self.current_velocity = WalkingSimulator.get_velocity()
         self.current_angles = WalkingSimulator.get_joint_angles()
         self.acceleration = self.get_body_acceleration()
@@ -256,10 +255,19 @@ class MoToFlexEnv(gym.Env):
         self.body_orientation_quat = WalkingSimulator.get_body_orientation_quaternion()
         self.angular_vel = WalkingSimulator.get_angular_velocity()
         self.joint_torques = WalkingSimulator.get_joint_torques()
+        self.current_pose = WalkingSimulator.get_6d_pose()
+        # Make sure at least one foot has contact to ground
 
         observation = self._get_obs()
         reward = self._reward(observation, delta_action, periodic_reward_values)
+        
         self.last_velocity = self.current_velocity
+        
+        standing = abs(self.current_pose[2]-0.34) < 0.10
+        contact = self.left_foot_contact or self.right_foot_contact
+        truncated = not WalkingSimulator.is_running() or not standing or not contact
+        terminated = self.time == 300
+        
         info = self._get_info()
 
         if self.print_counter%7500==0:
