@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import PIL.Image
 import os
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from scipy.spatial.transform import Rotation
+from scipy.spatial.transform import Rotation as R
 from scipy.stats import vonmises
 from motoflex_gym.kinematics import *
 import random
@@ -81,20 +81,23 @@ class MoToFlexEnv(gym.Env):
         self.window = None
         self.clock = None
         WalkingSimulator.init()
-        self.initial_quaternion_orientation = [1,1,1,0]
-        self.body_orientation_quat = [1,1,1,0]
+        self.initial_quaternion_orientation = [1, 0.033, -0.01, 0]
+        self.body_orientation_quat = [1, 0.033, -0.01, 0]
         self.angular_vel=np.zeros(shape=(3,), dtype='float64')
         self.current_angles = np.zeros(shape=(10,), dtype='float64')
         self.acceleration = np.array([0], dtype='float64')
         self.joint_velocities = np.zeros(shape=(10,), dtype='float64')
         self.left_foot_contact=True
         self.right_foot_contact=True
-        self.joint_torques = np.zeros(shape=(10,),dtype='float64')
+        self.joint_torques = np.zeros(shape=(10,), dtype='float64')
+        self.current_pose = np.zeros(shape=(6,), dtype='float64')
+        self.left_foot_vel = np.zeros(shape=(1,), dtype='float64')
+        self.right_foot_vel = np.zeros(shape=(1,), dtype='float64')
 
         
 
     def _get_obs(self):
-        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset, angles=self.current_angles, acceleration= self.acceleration, joint_velocities=self.joint_velocities, left_foot_contact=self.left_foot_contact,right_foot_contact=self.right_foot_contact, body_quat=self.body_orientation_quat, angular_vel=self.angular_vel, current_vel=self.current_velocity, joint_torques=self.joint_torques)
+        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset, angles=self.current_angles, body_position=self.current_pose[:3], acceleration= self.acceleration, joint_velocities=self.joint_velocities, left_foot_contact=self.left_foot_contact,right_foot_contact=self.right_foot_contact, left_foot_vel=self.left_foot_vel[0], right_foot_vel=self.right_foot_vel[0], body_quat=self.body_orientation_quat, angular_vel=self.angular_vel, current_vel=self.current_velocity, joint_torques=self.joint_torques)
         return _obs
 
     def _get_info(self):
@@ -119,14 +122,13 @@ class MoToFlexEnv(gym.Env):
 
         return observation, info
     
-    def _reward(self, last_action, periodic_reward_values):
-        obs = self._get_obs()
+    def _reward(self, obs, last_action, periodic_reward_values):
         self.rewards = []
         reward_log = {"bias": 0, "frc_left": 0, "spd_left": 0, "frc_right": 0, "spd_right": 0, "vel": 0, "quat": 0, "act": 0, "vel_y": 0, "torque": 0, "acc": 0}
         for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
             self.rewards.append(val)
-        if(self.print_counter%2000==0):
+        if(self.print_counter%7500==0):
             for key, val in zip(reward_log.keys(),self.rewards):
                 reward_log[key] = val
             reward_log['cycle_time'] = str(self.cycle_time)
@@ -156,13 +158,14 @@ class MoToFlexEnv(gym.Env):
      
     #Compute difference between current orientation and initial orientation
     def compute_quaternion_difference(self, current_quaternion):
-        quat_diff = np.abs(current_quaternion)-np.abs(self.initial_quaternion_orientation)
-        quat_diff_norm = np.array([norm(quat_diff)])
+        current_quat = R.from_quat(current_quaternion)
+        current_quat_inv = current_quat.inv()
+        quat_diff = R.from_quat(self.initial_quaternion_orientation) * current_quat_inv
         if(self.print_counter%10000==0):
             with open("/MoToFlex/quaternion_log.txt", 'a') as file:
-                file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\nquat_diff: {quat_diff}\nquat_diff_norm: {quat_diff_norm}\n\n\n")
+                file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\nquat_diff: {quat_diff}\n\n\n")
 
-        return quat_diff_norm
+        return quat_diff.as_quat()
 
     def compute_expected_phase_value(self, cycle_time):
         #for Von Mises distribution cycle time must be normalized to pi (since we only use the positive half of the distribution)
@@ -219,21 +222,18 @@ class MoToFlexEnv(gym.Env):
 
         WalkingSimulator.step(action)
 
-        terminated = self.time == 300
 
-        self.left_foot_contact = WalkingSimulator.foot_contact(1)
-        self.right_foot_contact = WalkingSimulator.foot_contact(2)
-        # Make sure at least one foot has contact to ground
-        contact = self.left_foot_contact or self.right_foot_contact
-        truncated = not WalkingSimulator.is_running() or not contact
-
-        #Simulation runs with 100 Hz and robot should do two steps per foot per second so one cycle period should be 0.5 seconds.
-        self.cycle_time = self.time % 101 / 100
-        #ModulContacto operation to ensure that the phase value is between 0 and 1
+        #Simulation runs with 100 Hz and robot should do one step per foot per second so one cycle period should be one second.
+        self.cycle_time = self.time % 100 / 100
+        #Modulo operation to ensure that the phase value is between 0 and 1
         left_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.left_cycle_offset)%1)
         left_stance_phase_value = 1 - left_swing_phase_value
         right_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.right_cycle_offset)%1)
         right_stance_phase_value = 1 - right_swing_phase_value
+        if(self.time < 300):
+            with open('cycle_time.txt', 'a') as file:
+                text = (f"Time: {self.time}\nCycle time: {self.cycle_time}\nLeft value{left_swing_phase_value}\nRight value{right_swing_phase_value}")
+                file.write(text+'\n\n\n')
 
         periodic_reward_values = {
         "expected_c_frc_left": left_swing_phase_value * -1,
@@ -244,7 +244,10 @@ class MoToFlexEnv(gym.Env):
         if(self.time == 1):
             self.initial_quaternion_orientation = WalkingSimulator.get_body_orientation_quaternion()
 
-        reward = self._reward(delta_action, periodic_reward_values)
+        self.left_foot_contact = WalkingSimulator.foot_contact(1)
+        self.right_foot_contact = WalkingSimulator.foot_contact(2)
+        self.left_foot_vel = WalkingSimulator.get_left_foot_velocity()
+        self.right_foot_vel = WalkingSimulator.get_right_foot_velocity()
         self.current_velocity = WalkingSimulator.get_velocity()
         self.current_angles = WalkingSimulator.get_joint_angles()
         self.acceleration = self.get_body_acceleration()
@@ -252,12 +255,22 @@ class MoToFlexEnv(gym.Env):
         self.body_orientation_quat = WalkingSimulator.get_body_orientation_quaternion()
         self.angular_vel = WalkingSimulator.get_angular_velocity()
         self.joint_torques = WalkingSimulator.get_joint_torques()
+        self.current_pose = WalkingSimulator.get_6d_pose()
+        # Make sure at least one foot has contact to ground
 
         observation = self._get_obs()
+        reward = self._reward(observation, delta_action, periodic_reward_values)
+        
         self.last_velocity = self.current_velocity
+        
+        standing = abs(self.current_pose[2]-0.34) < 0.10
+        contact = self.left_foot_contact or self.right_foot_contact
+        truncated = not WalkingSimulator.is_running() or not standing or not contact
+        terminated = self.time == 300
+        
         info = self._get_info()
 
-        if self.print_counter%2000==0:
+        if self.print_counter%7500==0:
             with open("angle_logs.txt",'a') as file:
                 file.write(f"angles at step {self.time}: {self.current_angles}\n\n")
             log_obs = copy.deepcopy(observation)
