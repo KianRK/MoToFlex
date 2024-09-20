@@ -93,7 +93,7 @@ def make_env():
 
 if __name__ == "__main__":
     
-    multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[128, 128, 128])
+    multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[256, 256, 256])
 
     recurrent_ppo_config = {
         "policy": "MultiInputLstmPolicy",
