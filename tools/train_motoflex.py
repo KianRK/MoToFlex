@@ -26,6 +26,7 @@ obs_space = gym.spaces.Dict({
     #    dtype=float),
     "current_joint_velocities": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
     "current_body_orientation_quaternion": gym.spaces.Box(-1, 1, shape=(4,), dtype=float),
+    "initial_body_orientation_quaternion": gym.spaces.Box(-1, 1, shape=(4,), dtype=float),
     "current_angular_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "current_lin_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "target_forwards_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
@@ -34,7 +35,7 @@ obs_space = gym.spaces.Dict({
     "p": gym.spaces.Box(-1, 1, shape=(2,), dtype=float)
 })
  
-obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angles, body_position, acceleration, joint_velocities, left_foot_contact, right_foot_contact, left_foot_vel, right_foot_vel, body_quat, angular_vel, current_vel, joint_torques: {
+obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angles, body_position, acceleration, joint_velocities, left_foot_contact, right_foot_contact, left_foot_vel, right_foot_vel, current_body_quat, initial_body_quat, angular_vel, current_vel, joint_torques: {
     "left_foot_contact": np.sum(left_foot_contact),
     "right_foot_contact": np.sum(right_foot_contact), 
     "left_foot_velocity": np.array([left_foot_vel], dtype='float64'),
@@ -42,7 +43,8 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angle
     "current_joint_angles": np.array(angles, dtype='float64'),
     "current_body_position": np.array(body_position, dtype='float64'),
     "current_joint_velocities": np.array(joint_velocities, dtype='float64'),
-    "current_body_orientation_quaternion": np.array(body_quat, dtype='float64'),
+    "current_body_orientation_quaternion": np.array(current_body_quat, dtype='float64'),
+    "initial_body_orientation_quaternion": np.array(initial_body_quat, dtype='float64'),
     "current_angular_velocity": np.array(angular_vel, dtype='float64'),
     "current_lin_vel": np.array(current_vel, dtype='float64'),
     "target_forwards_vel": np.array([0.20, 0, 0]),
@@ -54,15 +56,18 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angle
 rew_terms = [
     lambda _, __, ___, ____: 15,
     lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_left"]),
+    lambda _, __, ___, periodic_reward_values: 3*periodic_reward_values["expected_c_frc_left"]*np.abs(WalkingSimulator.get_left_foot_velocity()[0]-0.2),
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * norm(WalkingSimulator.get_left_foot_velocity())),
     lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]),
+    lambda _, __, ___, periodic_reward_values: 3*periodic_reward_values["expected_c_frc_right"]*np.abs(WalkingSimulator.get_left_right_velocity()[0]-0.2),
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * norm(WalkingSimulator.get_right_foot_velocity())),
-    lambda _, obs, __, ___: - 1 * np.sum(np.abs(5*(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0]))),
-    lambda env, obs, _, __: -3 * np.sum(env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])),
+    lambda _, obs, __, ___: - 1 * np.sum(np.abs(3*(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0]))),
+    lambda env, obs, _, __: -1 * np.sum(env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])),
     lambda _, __, last_action, ___: -0.01 * np.sum(np.abs(last_action)),
     lambda _, obs, __, ___: -1 * np.abs(obs["current_lin_vel"][1]),
     lambda _, obs, __, ___: -0.01 * np.sum(np.abs(obs["current_joint_torques"])),
     lambda _, obs, __, ___: -0.1 * np.sum(np.abs(obs["body_acceleration"])),
+    lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_body_position"][2]-0.34)),
 ]
 action_space = gym.spaces.Box(low=np.array([-0.38, -1.56, -0.09, -1.19, -0.4, -0.79, -1.56, -0.09, -1.19, -0.77]),
         high=np.array([0.79, 0.48, 2.11, 0.92, 0.77, 0.38, 0.48, 2.12, 0.93, 0.4]),
@@ -93,7 +98,7 @@ def make_env():
 
 if __name__ == "__main__":
     
-    multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[256, 256, 256])
+    multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[128, 128, 128])
 
     recurrent_ppo_config = {
         "policy": "MultiInputLstmPolicy",
