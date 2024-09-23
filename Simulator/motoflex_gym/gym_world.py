@@ -97,7 +97,7 @@ class MoToFlexEnv(gym.Env):
         
 
     def _get_obs(self):
-        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset, angles=self.current_angles, body_position=self.current_pose[:3], acceleration= self.acceleration, joint_velocities=self.joint_velocities, left_foot_contact=self.left_foot_contact,right_foot_contact=self.right_foot_contact, left_foot_vel=self.left_foot_vel[0], right_foot_vel=self.right_foot_vel[0], body_quat=self.body_orientation_quat, angular_vel=self.angular_vel, current_vel=self.current_velocity, joint_torques=self.joint_torques)
+        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset, angles=self.current_angles, body_position=self.current_pose[:3], acceleration= self.acceleration, joint_velocities=self.joint_velocities, left_foot_contact=self.left_foot_contact,right_foot_contact=self.right_foot_contact, left_foot_vel=self.left_foot_vel[0], right_foot_vel=self.right_foot_vel[0], current_body_quat=self.body_orientation_quat, initial_body_quat=self.initial_quaternion_orientation, angular_vel=self.angular_vel, current_vel=self.current_velocity, joint_torques=self.joint_torques)
         return _obs
 
     def _get_info(self):
@@ -151,10 +151,13 @@ class MoToFlexEnv(gym.Env):
             elif isinstance(value, np.float64):
                 dictionary[key] = float(value)
         with open(f"/MoToFlex/{filename}", 'a') as file:
-            # Convert dictionary to JSON string
-            json_string = json.dumps(dictionary)
-            # Append JSON string to file
-            file.write(json_string + '\n\n\n')
+            text = ""
+            for key in dictionary:
+                text += f"{key}: {dictionary[key]}\n"
+            text += "\n\n\n"
+            file.write(text)
+
+
      
     #Compute difference between current orientation and initial orientation
     def compute_quaternion_difference(self, current_quaternion):
@@ -163,7 +166,7 @@ class MoToFlexEnv(gym.Env):
         quat_diff = R.from_quat(self.initial_quaternion_orientation) * current_quat_inv
         if(self.print_counter%10000==0):
             with open("/MoToFlex/quaternion_log.txt", 'a') as file:
-                file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\nquat_diff: {quat_diff}\n\n\n")
+                file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\nquat_diff: {quat_diff.as_quat}\n\n\n")
 
         return quat_diff.as_quat()
 
@@ -224,16 +227,16 @@ class MoToFlexEnv(gym.Env):
 
 
         #Simulation runs with 100 Hz and robot should do one step per foot per second so one cycle period should be one second.
-        self.cycle_time = self.time % 100 / 100
+        self.cycle_time = self.time % 101 / 100
         #Modulo operation to ensure that the phase value is between 0 and 1
         left_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.left_cycle_offset)%1)
         left_stance_phase_value = 1 - left_swing_phase_value
         right_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.right_cycle_offset)%1)
         right_stance_phase_value = 1 - right_swing_phase_value
-        if(self.time < 300):
-            with open('cycle_time.txt', 'a') as file:
-                text = (f"Time: {self.time}\nCycle time: {self.cycle_time}\nLeft value{left_swing_phase_value}\nRight value{right_swing_phase_value}")
-                file.write(text+'\n\n\n')
+#        if(self.time < 300):
+#            with open('cycle_time.txt', 'a') as file:
+#                text = (f"Time: {self.time}\nCycle time: {self.cycle_time}\nLeft value{left_swing_phase_value}\nRight value{right_swing_phase_value}")
+#                file.write(text+'\n\n\n')
 
         periodic_reward_values = {
         "expected_c_frc_left": left_swing_phase_value * -1,
