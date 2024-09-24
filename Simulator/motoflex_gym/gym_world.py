@@ -124,7 +124,7 @@ class MoToFlexEnv(gym.Env):
     
     def _reward(self, obs, last_action, periodic_reward_values):
         self.rewards = []
-        reward_log = {"bias": 0, "frc_left": 0, "spd_left": 0, "frc_right": 0, "spd_right": 0, "vel": 0, "quat": 0, "act": 0, "vel_y": 0, "torque": 0, "acc": 0}
+        reward_log = {"bias": 0, "frc_left": 0, "wanted_spd_left": 0, "spd_left": 0, "frc_right": 0, "wanted_spd_right": 0, "spd_right": 0, "vel": 0, "quat": 0, "act": 0, "vel_y": 0, "torque": 0, "acc": 0, "height": 0}
         for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
             self.rewards.append(val)
