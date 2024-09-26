@@ -147,10 +147,15 @@ if __name__ == "__main__":
         record_video_trigger=lambda x: x % 30000 == 0,
         video_length=300,
     )
+    
+    obs_key_to_normalize = ["left_foot_velocity", "right_foot_velocity", "current_joint_angles", "current_body_position", "current_joint_velocities",
+            "current_body_orientation_quaternion", "initial_body_orientation_quaternion", "current_angular_velocity", "current_lin_vel",
+            "target_forwards_vel", "current_joint_torques", "body_acceleration", "p"]
 
     env = VecNormalize(
             env,
-            clip_obs = 20.0
+            clip_obs = 20.0,
+            norm_obs_keys = obs_key_to_normalize
     )
 
     model = RecurrentPPO(
