@@ -106,7 +106,9 @@ class MoToFlexEnv(gym.Env):
         }
 
     def reset(self, seed=None, options=None):
+
         # We need the following line to seed self.np_random
+        seed = np.random.randint(1,100)
         super().reset(seed=seed, options=options)
         WalkingSimulator.reset(self.config_path)
 
