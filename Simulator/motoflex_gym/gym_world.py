@@ -130,11 +130,11 @@ class MoToFlexEnv(gym.Env):
         for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
             self.rewards.append(val)
-        if(self.print_counter%7500==0):
-            for key, val in zip(reward_log.keys(),self.rewards):
-                reward_log[key] = val
-            reward_log['cycle_time'] = str(self.cycle_time)
-            self.append_dict_to_file("reward_log.txt",reward_log)
+        #if(self.print_counter%7500==0):
+        #    for key, val in zip(reward_log.keys(),self.rewards):
+        #        reward_log[key] = val
+        #    reward_log['cycle_time'] = str(self.cycle_time)
+        #    self.append_dict_to_file("reward_log.txt",reward_log)
         
         return (sum(self.rewards))
 
@@ -166,11 +166,11 @@ class MoToFlexEnv(gym.Env):
         current_quat = R.from_quat(current_quaternion)
         current_quat_inv = current_quat.inv()
         quat_diff = R.from_quat(self.initial_quaternion_orientation) * current_quat_inv
-        if(self.print_counter%10000==0):
-            with open("/MoToFlex/quaternion_log.txt", 'a') as file:
-                file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\nquat_diff: {quat_diff.as_quat}\n\n\n")
-
         return quat_diff.as_quat()
+#        if(self.print_counter%10000==0):
+#            with open("/MoToFlex/quaternion_log.txt", 'a') as file:
+#                file.write( f"current: {current_quaternion}\ninitial: {self.initial_quaternion_orientation}\nquat_diff: {quat_diff.as_quat}\n\n\n")
+
 
     def compute_expected_phase_value(self, cycle_time):
         #for Von Mises distribution cycle time must be normalized to pi (since we only use the positive half of the distribution)
@@ -275,11 +275,11 @@ class MoToFlexEnv(gym.Env):
         
         info = self._get_info()
 
-        if self.print_counter%7500==0:
-            with open("angle_logs.txt",'a') as file:
-                file.write(f"angles at step {self.time}: {self.current_angles}\n\n")
-            log_obs = copy.deepcopy(observation)
-            self.append_dict_to_file("obs_log.txt",log_obs)
+#        if self.print_counter%7500==0:
+#            with open("angle_logs.txt",'a') as file:
+#                file.write(f"angles at step {self.time}: {self.current_angles}\n\n")
+#            log_obs = copy.deepcopy(observation)
+#            self.append_dict_to_file("obs_log.txt",log_obs)
 
         self.print_counter+=1
 

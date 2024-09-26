@@ -9,7 +9,7 @@ import numpy as np
 from numpy.linalg import norm
 from sb3_contrib import RecurrentPPO
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecVideoRecorder
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecVideoRecorder, VecNormalize
 import wandb
 from wandb.integration.sb3 import WandbCallback
 
@@ -147,6 +147,12 @@ if __name__ == "__main__":
         record_video_trigger=lambda x: x % 30000 == 0,
         video_length=300,
     )
+
+    env = VecNormalize(
+            env,
+            clip_obs = 20.0
+    )
+
     model = RecurrentPPO(
         env=env,
         **recurrent_ppo_config,
