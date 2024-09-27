@@ -104,7 +104,7 @@ if __name__ == "__main__":
         "n_steps": 512,
         "batch_size": 16,
         "n_epochs": 4,
-        "ent_coef": 0.05,
+        "ent_coef": 0.025,
         "learning_rate": 0.0001,
         "clip_range": 0.2,
         "use_sde": True,
