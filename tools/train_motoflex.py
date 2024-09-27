@@ -66,8 +66,8 @@ rew_terms = [
     lambda _, obs, __, ___: -0.1 * np.sum(np.abs(obs["body_acceleration"])),
     lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_body_position"][2]-0.34)),
 ]
-action_space = gym.spaces.Box(low=np.array([-0.38, -1.56, -0.09, -1.19, -0.4, -0.79, -1.56, -0.09, -1.19, -0.77]),
-        high=np.array([0.79, 0.48, 2.11, 0.92, 0.77, 0.38, 0.48, 2.12, 0.93, 0.4]),
+action_space = gym.spaces.Box(low=np.array([-0.38, -1.56, -0.09, -0.28, -0.174, -0.79, -1.56, -0.09, -0.28, -0.174]),
+        high=np.array([0.79, 0.48, 2.11, 0.28, 0.174, 0.38, 0.48, 2.12, 0.28, 0.174]),
         dtype=float)
 #action_space = gym.spaces.Box(-10, 10, shape=(10,), dtype=float)
 
