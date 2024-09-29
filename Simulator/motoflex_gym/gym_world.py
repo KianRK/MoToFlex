@@ -99,7 +99,7 @@ class MoToFlexEnv(gym.Env):
         
 
     def _get_obs(self):
-        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset, angles=self.current_angles, body_position=self.current_pose[:3], acceleration= self.acceleration, joint_velocities=self.joint_velocities, left_foot_contact=self.left_foot_contact,right_foot_contact=self.right_foot_contact, left_foot_vel=self.left_foot_vel[0], right_foot_vel=self.right_foot_vel[0], current_body_quat=self.body_orientation_quat, initial_body_quat=self.initial_quaternion_orientation, angular_vel=self.angular_vel, current_vel=self.current_velocity, joint_torques=self.joint_torques)
+        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset,, body_position=self.current_pose[:3], acceleration= self.acceleration, joint_velocities=self.joint_velocities, left_foot_contact=self.left_foot_contact,right_foot_contact=self.right_foot_contact, left_foot_vel=self.left_foot_vel[0], right_foot_vel=self.right_foot_vel[0], current_body_quat=self.body_orientation_quat, initial_body_quat=self.initial_quaternion_orientation, angular_vel=self.angular_vel, current_vel=self.current_velocity, joint_torques=self.joint_torques)
         return _obs
 
     def _get_info(self):
@@ -254,15 +254,9 @@ class MoToFlexEnv(gym.Env):
 
         self.left_foot_contact = WalkingSimulator.foot_contact(1)
         self.right_foot_contact = WalkingSimulator.foot_contact(2)
-        self.left_foot_vel = WalkingSimulator.get_left_foot_velocity()
-        self.right_foot_vel = WalkingSimulator.get_right_foot_velocity()
         self.current_velocity = WalkingSimulator.get_velocity()
-        self.current_angles = WalkingSimulator.get_joint_angles()
         self.acceleration = self.get_body_acceleration()
-        self.joint_velocities = WalkingSimulator.get_joint_velocities()
         self.body_orientation_quat = WalkingSimulator.get_body_orientation_quaternion()
-        self.angular_vel = WalkingSimulator.get_angular_velocity()
-        self.joint_torques = WalkingSimulator.get_joint_torques()
         self.current_pose = WalkingSimulator.get_6d_pose()
         # Make sure at least one foot has contact to ground
 
@@ -279,8 +273,8 @@ class MoToFlexEnv(gym.Env):
         info = self._get_info()
 
         if self.print_counter%2500==0:
-#            with open("angle_logs.txt",'a') as file:
-#                file.write(f"angles at step {self.time}: {self.current_angles}\n\n")
+            with open("action_logs.txt",'a') as file:
+                file.write(f"actions : {action}\nunnormalized actions: {unnormalized_actions}\n\n\n")
             log_obs = copy.deepcopy(observation)
             self.append_dict_to_file("obs_log.txt",log_obs)
 
