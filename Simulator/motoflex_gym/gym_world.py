@@ -99,7 +99,7 @@ class MoToFlexEnv(gym.Env):
         
 
     def _get_obs(self):
-        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset,, body_position=self.current_pose[:3], acceleration= self.acceleration, joint_velocities=self.joint_velocities, left_foot_contact=self.left_foot_contact,right_foot_contact=self.right_foot_contact, left_foot_vel=self.left_foot_vel[0], right_foot_vel=self.right_foot_vel[0], current_body_quat=self.body_orientation_quat, initial_body_quat=self.initial_quaternion_orientation, angular_vel=self.angular_vel, current_vel=self.current_velocity, joint_torques=self.joint_torques)
+        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset, acceleration= self.acceleration)
         return _obs
 
     def _get_info(self):
