@@ -23,7 +23,6 @@ obs_space = gym.spaces.Dict({
     "current_body_position": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "current_joint_velocities": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
     "current_body_orientation_quaternion": gym.spaces.Box(-1, 1, shape=(4,), dtype=float),
-    "initial_body_orientation_quaternion": gym.spaces.Box(-1, 1, shape=(4,), dtype=float),
     "current_angular_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "current_lin_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "target_forwards_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
@@ -50,7 +49,7 @@ obs_space = gym.spaces.Dict({
     #}
 
  
-obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angles, body_position, acceleration, joint_velocities, left_foot_contact, right_foot_contact, left_foot_vel, right_foot_vel, current_body_quat, initial_body_quat, angular_vel, current_vel, joint_torques: {
+obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, acceleration: {
     "left_foot_contact": np.sum(WalkingSimulator.foot_contact(1)),
     "right_foot_contact": np.sum(WalkingSimulator.foot_contact(2)), 
     "left_foot_velocity": np.array([WalkingSimulator.get_left_foot_velocity()[0]], dtype='float64'),
@@ -58,8 +57,7 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angle
     "current_joint_angles": np.array(WalkingSimulator.get_joint_angles(), dtype='float64'),
     "current_body_position": np.array(WalkingSimulator.get_6d_pose()[:3], dtype='float64'),
     "current_joint_velocities": np.array(WalkingSimulator.get_joint_velocities(), dtype='float64'),
-    "current_body_orientation_quaternion": np.array(current_body_quat, dtype='float64'),
-    "initial_body_orientation_quaternion": np.array(initial_body_quat, dtype='float64'),
+    "current_body_orientation_quaternion": np.array(WalkingSimulator.get_body_orientation_quaternion(), type='float64'),
     "current_angular_velocity": np.array(WalkingSimulator.get_angular_velocity(), dtype='float64'),
     "current_lin_vel": np.array(WalkingSimulator.get_velocity(), dtype='float64'),
     "target_forwards_vel": np.array([0.20, 0, 0]),
