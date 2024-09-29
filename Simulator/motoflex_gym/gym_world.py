@@ -71,6 +71,8 @@ class MoToFlexEnv(gym.Env):
         self.render_mode = render_mode
         self.last_polar = None
 
+        self.joint_ranges = [1.17, 2.04, 2.2, 0.56, 0.348, 1.17, 2.04, 2.21, 0.56, 0.348]
+
         """
         If human-rendering is used, `self.window` will be a reference
         to the window that we draw to. `self.clock` will be a clock that is used
@@ -130,11 +132,11 @@ class MoToFlexEnv(gym.Env):
         for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
             self.rewards.append(val)
-        #if(self.print_counter%7500==0):
-        #    for key, val in zip(reward_log.keys(),self.rewards):
-        #        reward_log[key] = val
-        #    reward_log['cycle_time'] = str(self.cycle_time)
-        #    self.append_dict_to_file("reward_log.txt",reward_log)
+        if(self.print_counter%2500==0):
+            for key, val in zip(reward_log.keys(),self.rewards):
+                reward_log[key] = val
+            reward_log['cycle_time'] = str(self.cycle_time)
+            self.append_dict_to_file("reward_log.txt",reward_log)
         
         return (sum(self.rewards))
 
@@ -224,8 +226,9 @@ class MoToFlexEnv(gym.Env):
                     f_z = 0.
                 WalkingSimulator.add_force(0, f_x, f_y, f_z)
                 self.pushes.append([f_x, f_y, f_z])
-
-        WalkingSimulator.step(action)
+    
+        unnormalized_actions = self.unnormalize_actions(action)
+        WalkingSimulator.step(unnormalized_actions)
 
 
         #Simulation runs with 100 Hz and robot should do one step per foot per second so one cycle period should be one second.
@@ -275,11 +278,11 @@ class MoToFlexEnv(gym.Env):
         
         info = self._get_info()
 
-#        if self.print_counter%7500==0:
+        if self.print_counter%2500==0:
 #            with open("angle_logs.txt",'a') as file:
 #                file.write(f"angles at step {self.time}: {self.current_angles}\n\n")
-#            log_obs = copy.deepcopy(observation)
-#            self.append_dict_to_file("obs_log.txt",log_obs)
+            log_obs = copy.deepcopy(observation)
+            self.append_dict_to_file("obs_log.txt",log_obs)
 
         self.print_counter+=1
 
@@ -460,6 +463,17 @@ class MoToFlexEnv(gym.Env):
         right_cur_polar = cart_to_spherical(*cur_pose[6:9])
 
         return np.concatenate([left_cur_polar, right_cur_polar])
+    
+    def unnormalize_actions(self, actions):
+        unnormalized_actions = []
+        for action in actions:
+            unnormalized_action = (action+1)*50
+            unnormalized_actions.append(unnormalized_action)
+
+        return unnormalized_actions
+
+
+
 
     def delta_polar_to_angles(self, left_drx, left_dry, left_dlen, right_drx, right_dry, right_dlen):
         cur_polar = self.current_polar_pos()
