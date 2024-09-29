@@ -31,21 +31,39 @@ obs_space = gym.spaces.Dict({
     "body_acceleration": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
     "p": gym.spaces.Box(-1, 1, shape=(2,), dtype=float)
 })
+#obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angles, body_position, acceleration, joint_velocities, left_foot_contact, right_foot_contact, left_foot_vel, right_foot_vel, current_body_quat, initial_body_quat, angular_vel, current_vel, joint_torques: {
+ #   "left_foot_contact": np.sum(left_foot_contact),
+  #  "right_foot_contact": np.sum(right_foot_contact), 
+   # "left_foot_velocity": np.array([left_foot_vel], dtype='float64'),
+    #"right_foot_velocity": np.array([right_foot_vel], dtype='float64'),
+#    "current_joint_angles": np.array(angles, dtype='float64'),
+ #   "current_body_position": np.array(body_position, dtype='float64'),
+  #  "current_joint_velocities": np.array(joint_velocities, dtype='float64'),
+   # "current_body_orientation_quaternion": np.array(current_body_quat, dtype='float64'),
+    #"initial_body_orientation_quaternion": np.array(initial_body_quat, dtype='float64'),
+#    "current_angular_velocity": np.array(angular_vel, dtype='float64'),
+ #   "current_lin_vel": np.array(current_vel, dtype='float64'),
+  #  "target_forwards_vel": np.array([0.20, 0, 0]),
+   # "current_joint_torques": np.array(joint_torques, dtype='float64'),
+    #"body_acceleration": np.array(acceleration, dtype='float64'),
+    #"p": np.array([np.sin(2*np.pi*((cycle_time+left_cycle_offset)%1)), np.sin(2*np.pi*((cycle_time+right_cycle_offset)%1))], dtype='float64')
+    #}
+
  
 obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angles, body_position, acceleration, joint_velocities, left_foot_contact, right_foot_contact, left_foot_vel, right_foot_vel, current_body_quat, initial_body_quat, angular_vel, current_vel, joint_torques: {
-    "left_foot_contact": np.sum(left_foot_contact),
-    "right_foot_contact": np.sum(right_foot_contact), 
-    "left_foot_velocity": np.array([left_foot_vel], dtype='float64'),
-    "right_foot_velocity": np.array([right_foot_vel], dtype='float64'),
-    "current_joint_angles": np.array(angles, dtype='float64'),
-    "current_body_position": np.array(body_position, dtype='float64'),
-    "current_joint_velocities": np.array(joint_velocities, dtype='float64'),
+    "left_foot_contact": np.sum(WalkingSimulator.foot_contact(1)),
+    "right_foot_contact": np.sum(WalkingSimulator.foot_contact(2)), 
+    "left_foot_velocity": np.array([WalkingSimulator.get_left_foot_velocity()[0]], dtype='float64'),
+    "right_foot_velocity": np.array([WalkingSimulator.get_right_foot_velocity()[0]], dtype='float64'),
+    "current_joint_angles": np.array(WalkingSimulator.get_joint_angles(), dtype='float64'),
+    "current_body_position": np.array(WalkingSimulator.get_6d_pose()[:3], dtype='float64'),
+    "current_joint_velocities": np.array(WalkingSimulator.get_joint_velocities(), dtype='float64'),
     "current_body_orientation_quaternion": np.array(current_body_quat, dtype='float64'),
     "initial_body_orientation_quaternion": np.array(initial_body_quat, dtype='float64'),
-    "current_angular_velocity": np.array(angular_vel, dtype='float64'),
-    "current_lin_vel": np.array(current_vel, dtype='float64'),
+    "current_angular_velocity": np.array(WalkingSimulator.get_angular_velocity(), dtype='float64'),
+    "current_lin_vel": np.array(WalkingSimulator.get_velocity(), dtype='float64'),
     "target_forwards_vel": np.array([0.20, 0, 0]),
-    "current_joint_torques": np.array(joint_torques, dtype='float64'),
+    "current_joint_torques": np.array(WalkingSimulator.get_joint_torques(), dtype='float64'),
     "body_acceleration": np.array(acceleration, dtype='float64'),
     "p": np.array([np.sin(2*np.pi*((cycle_time+left_cycle_offset)%1)), np.sin(2*np.pi*((cycle_time+right_cycle_offset)%1))], dtype='float64')
     }
@@ -66,9 +84,7 @@ rew_terms = [
     lambda _, obs, __, ___: -0.1 * np.sum(np.abs(obs["body_acceleration"])),
     lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_body_position"][2]-0.34)),
 ]
-action_space = gym.spaces.Box(low=np.array([-0.38, -1.56, -0.09, -0.28, -0.174, -0.79, -1.56, -0.09, -0.28, -0.174]),
-        high=np.array([0.79, 0.48, 2.11, 0.28, 0.174, 0.38, 0.48, 2.12, 0.28, 0.174]),
-        dtype=float)
+action_space = gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=float)
 #action_space = gym.spaces.Box(-10, 10, shape=(10,), dtype=float)
 
 action_function = lambda d: (d.tolist())
