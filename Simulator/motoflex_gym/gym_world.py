@@ -71,6 +71,8 @@ class MoToFlexEnv(gym.Env):
         self.render_mode = render_mode
         self.last_polar = None
 
+        self.lower_joint_limits = [-0.38, -1.56, -0.09, -0.28, -0.174, -0.79, -1.56, -0.09, -0.28, -0.174]
+        self.upper_joint_limits = [0.79, 0.48, 2.11, 0.28, 0.174, 0.38, 0.48, 2.12, 0.28, 0.174]
         self.joint_ranges = [1.17, 2.04, 2.2, 0.56, 0.348, 1.17, 2.04, 2.21, 0.56, 0.348]
 
         """
@@ -132,7 +134,7 @@ class MoToFlexEnv(gym.Env):
         for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
             self.rewards.append(val)
-        if(self.print_counter%2500==0):
+        if(self.print_counter%10000==0):
             for key, val in zip(reward_log.keys(),self.rewards):
                 reward_log[key] = val
             reward_log['cycle_time'] = str(self.cycle_time)
@@ -272,7 +274,7 @@ class MoToFlexEnv(gym.Env):
         
         info = self._get_info()
 
-        if self.print_counter%2500==0:
+        if self.print_counter%10000==0:
             with open("action_logs.txt",'a') as file:
                 file.write(f"actions : {action}\nunnormalized actions: {unnormalized_actions}\n\n\n")
             log_obs = copy.deepcopy(observation)
@@ -460,14 +462,12 @@ class MoToFlexEnv(gym.Env):
     
     def unnormalize_actions(self, actions):
         unnormalized_actions = []
-        for action in actions:
-            unnormalized_action = (action+1)*50
+        for i, action in enumerate(actions):
+            range_percentage = (action+1)*0.5
+            unnormalized_action = self.lower_joint_limits[i] + range_percentage*self.joint_ranges[i]
             unnormalized_actions.append(unnormalized_action)
 
         return unnormalized_actions
-
-
-
 
     def delta_polar_to_angles(self, left_drx, left_dry, left_dlen, right_drx, right_dry, right_dlen):
         cur_polar = self.current_polar_pos()

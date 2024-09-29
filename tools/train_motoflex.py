@@ -19,7 +19,7 @@ obs_space = gym.spaces.Dict({
     "right_foot_contact": gym.spaces.Discrete(2),
     "left_foot_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
     "right_foot_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
-    "current_joint_angles": gym.spaces.Box(np.array([-0.38, -1.56, -0.09, -1.19, -0.4, -0.79, -1.56, -0.09, -1.19, -0.77]), np.array([0.79, 0.48, 2.11, 0.92, 0.77, 0.38, 0.48, 2.12, 0.93, 0.4]), shape=(10,), dtype=float),
+    "current_joint_angles": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
     "current_body_position": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "current_joint_velocities": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
     "current_body_orientation_quaternion": gym.spaces.Box(-1, 1, shape=(4,), dtype=float),
@@ -57,7 +57,7 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, accel
     "current_joint_angles": np.array(WalkingSimulator.get_joint_angles(), dtype='float64'),
     "current_body_position": np.array(WalkingSimulator.get_6d_pose()[:3], dtype='float64'),
     "current_joint_velocities": np.array(WalkingSimulator.get_joint_velocities(), dtype='float64'),
-    "current_body_orientation_quaternion": np.array(WalkingSimulator.get_body_orientation_quaternion(), type='float64'),
+    "current_body_orientation_quaternion": np.array(WalkingSimulator.get_body_orientation_quaternion(), dtype='float64'),
     "current_angular_velocity": np.array(WalkingSimulator.get_angular_velocity(), dtype='float64'),
     "current_lin_vel": np.array(WalkingSimulator.get_velocity(), dtype='float64'),
     "target_forwards_vel": np.array([0.20, 0, 0]),
@@ -161,9 +161,9 @@ if __name__ == "__main__":
         record_video_trigger=lambda x: x % 30000 == 0,
         video_length=300,
     )
-    
+
     obs_key_to_normalize = ["left_foot_velocity", "right_foot_velocity", "current_joint_angles", "current_body_position", "current_joint_velocities",
-            "current_body_orientation_quaternion", "initial_body_orientation_quaternion", "current_angular_velocity", "current_lin_vel",
+            "current_body_orientation_quaternion", "current_angular_velocity", "current_lin_vel",
             "target_forwards_vel", "current_joint_torques", "body_acceleration", "p"]
 
     env = VecNormalize(
