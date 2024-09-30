@@ -2,8 +2,15 @@ import sys
 sys.path.append('Simulator')
 
 from motoflex_gym import WalkingSimulator
-from motoflex_gym.gym_world import MoToFlexEnv
+from motoflex_gym.gym_world 
+import MoToFlexEnv
 
+from typing import Any
+from typing import Dict
+
+import optuna
+from optuna.pruners import MedianPruner
+from optuna.samplers import TPESampler
 import gymnasium as gym
 import numpy as np
 from numpy.linalg import norm
@@ -12,6 +19,27 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecVideoRecorder, VecNormalize
 import wandb
 from wandb.integration.sb3 import WandbCallback
+import torch
+import torch.nn as nn
+
+
+multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[128, 128, 128])
+
+recurrent_ppo_config = {
+        "policy": "MultiInputLstmPolicy",
+        "gae_lambda": 0.95,
+        "gamma": 0.99,
+        "n_steps": 512,
+        "batch_size": 16,
+        "n_epochs": 4,
+        "ent_coef": 0.025,
+        "learning_rate": 0.0001,
+        "clip_range": 0.2,
+        "use_sde": True,
+        "policy_kwargs": multi_input_lstm_policy_config,
+        "sde_sample_freq": 4,
+        "verbose": 1,
+}
 
 # For some more explanations, see envtest.ipynb.
 obs_space = gym.spaces.Dict({
@@ -92,6 +120,47 @@ random_push = {
     "force_range_x": [500, 1000]
 }
 
+def sample_recppo_params(trial: optuna.Trial) -> Dict[str, Any]:
+    gamma = 1.0 - trial.suggest_float("gamma", 0.0001, 0.1, log=True)
+    max_grad_norm = trial.suggest_float("max_grad_norm",0.3, 5.0, log=True)
+    gae_lambda = trial.suggest_float("gae_lambda", 0.001, 0.2, log=True)
+    n_steps = 2**trial.suggest_int("exponent_n_steps", 5, 10)
+    learning_rate = trial.suggest_float("lr", 0.0001, 0.003)
+    ent_coef = trial.suggest_float("ent_coeff", 0.001, 0.1, log=True)
+    ortho_init = trial.suggest_categorical("ortho_init", [False,True])
+    net_arch = trial.suggest_categorical("net_arch", ["small", "medium", "large"])
+    lstm_hidden_size = trial.suggest_categorical("lstm_hidden_size", ["small", "large"])
+    activation_fn = trial.suggest_categorical("activation_fn", ["tanh", "relu"])
+
+    if(net_arch == "small"):
+        net_arch = [128, 128, 128,]
+    if(net_arch == "medium"):
+        net_arch = [128, 128, 128, 128]
+    if(net_arch == "large"):
+        net_arch = [128, 128, 128, 128, 128]
+
+    if(lstm_hidden_size == "small"):
+        lstm_hidden_size = 128
+    if(lstm_hidden_size == "large"):
+        lstm_hidden_size = 300
+
+    activation_fn = {"tanh": nn.Tanh, "relu": nn.ReLu}[activation_fn]
+
+    return {
+            "gamma": gamma,
+            "max_grad_norm": max_grad_norm,
+            "gae_lambda": gae_lambda,
+            "n_steps": n_steps,
+            "learning_rate": learning_rate,
+            "ent_coef": ent_coef,
+            "policy_kwargs": {
+                "ortho_init": ortho_init,
+                "net_arch": net_arch,
+                "lstm_hidden_size": lstm_hidden_size,
+                "activation_fn": activation_fn
+            },
+    }
+
 def make_env():
     env = gym.make("MoToFlex/WalkingSimulator-v0", 
                 render_mode='rgb_array', 
@@ -104,36 +173,65 @@ def make_env():
                 random_push = random_push
 
                 )
+    
+    obs_key_to_normalize = ["left_foot_velocity", "right_foot_velocity", "current_joint_angles", "current_body_position", "current_joint_velocities",
+            "current_body_orientation_quaternion", "current_angular_velocity", "current_lin_vel",
+            "target_forwards_vel", "current_joint_torques", "body_acceleration", "p"]
+
+    env = VecNormalize(
+            env,
+            clip_obs = 20.0,
+            norm_obs_keys = obs_key_to_normalize
+    )
+
     env = Monitor(env)  # record stats such as returns
     return env
 
-if __name__ == "__main__":
+class TrialEvalCallback(EvalCallback):
+    """Callback used for evaluating and reporting a trial."""
+
+    def __init__(
+        self,
+        eval_env: gymnasium.Env,
+        trial: optuna.Trial,
+        n_eval_episodes: int = 5,
+        eval_freq: int = 10000,
+        deterministic: bool = True,
+        verbose: int = 0,
+    ):
+        super().__init__(
+            eval_env=eval_env,
+            n_eval_episodes=n_eval_episodes,
+            eval_freq=eval_freq,
+            deterministic=deterministic,
+            verbose=verbose,
+        )
+        self.trial = trial
+        self.eval_idx = 0
+        self.is_pruned = False
+
+    def _on_step(self) -> bool:
+        if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
+            super()._on_step()
+            self.eval_idx += 1
+            self.trial.report(self.last_mean_reward, self.eval_idx)
+            # Prune trial if need.
+            if self.trial.should_prune():
+                self.is_pruned = True
+                return False
+        return True
+
+def objective(trial: optuna.Trial) -> float:
+    kwargs = recurrent_ppo_config
+    kwargs.update(sample_recppo_params(trial))
     
-    multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[128, 128, 128])
-
-    recurrent_ppo_config = {
-        "policy": "MultiInputLstmPolicy",
-        "gae_lambda": 0.95,
-        "gamma": 0.99,
-        "n_steps": 512,
-        "batch_size": 16,
-        "n_epochs": 4,
-        "ent_coef": 0.025,
-        "learning_rate": 0.0001,
-        "clip_range": 0.2,
-        "use_sde": True,
-        "policy_kwargs": multi_input_lstm_policy_config,
-        "sde_sample_freq": 4,
-        "verbose": 1,
-    }
-
     config = {
-        "total_timesteps": 15e7
+        "total_timesteps": 3e6
     }
 
     all_configs = {
         "learn_conf": config,
-        "recurrent_ppo_config": recurrent_ppo_config,
+        "recurrent_ppo_config": **kwargs,
         "reward_terms": rew_terms,
         "observation_space": obs_space,
         "observation_terms": obs_terms,
@@ -150,10 +248,7 @@ if __name__ == "__main__":
         save_code=True,  # optional
     )
 
-    if True:
-        env = SubprocVecEnv([make_env for _ in range(20)])
-    else:
-        env = DummyVecEnv([make_env])
+    env = make_env()
 
     env = VecVideoRecorder(
         env,
@@ -161,20 +256,10 @@ if __name__ == "__main__":
         record_video_trigger=lambda x: x % 30000 == 0,
         video_length=300,
     )
-
-    obs_key_to_normalize = ["left_foot_velocity", "right_foot_velocity", "current_joint_angles", "current_body_position", "current_joint_velocities",
-            "current_body_orientation_quaternion", "current_angular_velocity", "current_lin_vel",
-            "target_forwards_vel", "current_joint_torques", "body_acceleration", "p"]
-
-    env = VecNormalize(
-            env,
-            clip_obs = 20.0,
-            norm_obs_keys = obs_key_to_normalize
-    )
-
+    
     model = RecurrentPPO(
         env=env,
-        **recurrent_ppo_config,
+        **kwargs,
         tensorboard_log=f"tmp/runs/{run.id}"
         )
 
@@ -187,3 +272,9 @@ if __name__ == "__main__":
         ),
     )
     run.finish()
+
+    return
+
+
+if __name__ == "__main__":
+
