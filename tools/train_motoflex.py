@@ -2,8 +2,7 @@ import sys
 sys.path.append('Simulator')
 
 from motoflex_gym import WalkingSimulator
-from motoflex_gym.gym_world 
-import MoToFlexEnv
+from motoflex_gym.gym_world import MoToFlexEnv
 
 from typing import Any
 from typing import Dict
@@ -21,6 +20,13 @@ import wandb
 from wandb.integration.sb3 import WandbCallback
 import torch
 import torch.nn as nn
+
+N_TRIALS = 50
+N_STARTUP_TRIALS = 5
+N_EVALUATIONS = 2
+N_TIMESTEPS = 3e5
+EVAL_FREQ = int(N_TIMESTEPS / N_EVALUATIONS)
+N_EVAL_EPISODES = 3
 
 
 multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[128, 128, 128])
@@ -144,7 +150,7 @@ def sample_recppo_params(trial: optuna.Trial) -> Dict[str, Any]:
     if(lstm_hidden_size == "large"):
         lstm_hidden_size = 300
 
-    activation_fn = {"tanh": nn.Tanh, "relu": nn.ReLu}[activation_fn]
+    activation_fn = {"tanh": nn.Tanh, "relu": nn.ReLU}[activation_fn]
 
     return {
             "gamma": gamma,
@@ -171,67 +177,22 @@ def make_env():
                 action_function = action_function,
                 ab_filter_alpha = 0.1,
                 random_push = random_push
-
                 )
     
-    obs_key_to_normalize = ["left_foot_velocity", "right_foot_velocity", "current_joint_angles", "current_body_position", "current_joint_velocities",
-            "current_body_orientation_quaternion", "current_angular_velocity", "current_lin_vel",
-            "target_forwards_vel", "current_joint_torques", "body_acceleration", "p"]
-
-    env = VecNormalize(
-            env,
-            clip_obs = 20.0,
-            norm_obs_keys = obs_key_to_normalize
-    )
-
-    env = Monitor(env)  # record stats such as returns
+    env = Monitor(env)  # record stats such as returns    
     return env
-
-class TrialEvalCallback(EvalCallback):
-    """Callback used for evaluating and reporting a trial."""
-
-    def __init__(
-        self,
-        eval_env: gymnasium.Env,
-        trial: optuna.Trial,
-        n_eval_episodes: int = 5,
-        eval_freq: int = 10000,
-        deterministic: bool = True,
-        verbose: int = 0,
-    ):
-        super().__init__(
-            eval_env=eval_env,
-            n_eval_episodes=n_eval_episodes,
-            eval_freq=eval_freq,
-            deterministic=deterministic,
-            verbose=verbose,
-        )
-        self.trial = trial
-        self.eval_idx = 0
-        self.is_pruned = False
-
-    def _on_step(self) -> bool:
-        if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
-            super()._on_step()
-            self.eval_idx += 1
-            self.trial.report(self.last_mean_reward, self.eval_idx)
-            # Prune trial if need.
-            if self.trial.should_prune():
-                self.is_pruned = True
-                return False
-        return True
 
 def objective(trial: optuna.Trial) -> float:
     kwargs = recurrent_ppo_config
     kwargs.update(sample_recppo_params(trial))
     
     config = {
-        "total_timesteps": 3e6
+        "total_timesteps": N_TIMESTEPS
     }
 
     all_configs = {
         "learn_conf": config,
-        "recurrent_ppo_config": **kwargs,
+        "recurrent_ppo_config": kwargs,
         "reward_terms": rew_terms,
         "observation_space": obs_space,
         "observation_terms": obs_terms,
@@ -248,7 +209,7 @@ def objective(trial: optuna.Trial) -> float:
         save_code=True,  # optional
     )
 
-    env = make_env()
+    env = DummyVecEnv([make_env]) 
 
     env = VecVideoRecorder(
         env,
@@ -257,11 +218,21 @@ def objective(trial: optuna.Trial) -> float:
         video_length=300,
     )
     
+    obs_key_to_normalize = ["left_foot_velocity", "right_foot_velocity", "current_joint_angles", "current_body_position", "current_joint_velocities",
+            "current_body_orientation_quaternion", "current_angular_velocity", "current_lin_vel",
+            "target_forwards_vel", "current_joint_torques", "body_acceleration", "p"]
+
+    env = VecNormalize(
+            env,
+            clip_obs = 20.0,
+            norm_obs_keys = obs_key_to_normalize
+    )
+
     model = RecurrentPPO(
         env=env,
         **kwargs,
         tensorboard_log=f"tmp/runs/{run.id}"
-        )
+    )    
 
     model.learn(
         **config,
@@ -271,10 +242,36 @@ def objective(trial: optuna.Trial) -> float:
             verbose=2,
         ),
     )
+
     run.finish()
-
-    return
-
-
+    
+    rewards = env.get_episode_rewards()
+    average_rewards_for_last_ten_episodes = sum(rewards[-1:-11:-1])/10
+    
+    return average_rewards_for_last_ten_episodes
+    
 if __name__ == "__main__":
 
+    torch.set_num_threads(1)
+
+    sampler = TPESampler(n_startup_trials=N_STARTUP_TRIALS)
+    pruner = MedianPruner(n_startup_trials=N_STARTUP_TRIALS, n_warmup_steps = N_EVALUATIONS // 3)
+
+    study = optuna.create_study(sampler=sampler, pruner=pruner, direction="maximize")
+    try:
+        study.optimize(objective, n_trials=N_TRIALS, timeout=600)
+    except KeyboardInterrupt:
+        pass
+
+    with open("optuna_logs.txt", "a") as file:
+        log_text = f"Number of finished trials: {len(study.trials)}\nBest trial: {study.best_trial}\nValue: {trial.value}\nparams:\n"
+        param_string = ""
+        for key,value in trial.params.items():
+            param_string += f"\t{key}: {value}\n"
+        log_text += param_string
+        log_text += "User attributes:\n"
+        user_attr_string = ""
+        for key, value in trial.user_attrs.items():
+            user_attr_string += f"\t{key}: {value}\n"
+        log_text += user_attr_string
+        file.write(log_text)
