@@ -10,6 +10,7 @@ from typing import Dict
 import optuna
 from optuna.pruners import MedianPruner
 from optuna.samplers import TPESampler
+import logging
 import gymnasium as gym
 import numpy as np
 from numpy.linalg import norm
@@ -21,10 +22,10 @@ from wandb.integration.sb3 import WandbCallback
 import torch
 import torch.nn as nn
 
-N_TRIALS = 50
+N_TRIALS = 40
 N_STARTUP_TRIALS = 5
 N_EVALUATIONS = 2
-N_TIMESTEPS = 3e5
+N_TIMESTEPS = 150000
 EVAL_FREQ = int(N_TIMESTEPS / N_EVALUATIONS)
 N_EVAL_EPISODES = 3
 
@@ -64,24 +65,6 @@ obs_space = gym.spaces.Dict({
     "body_acceleration": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
     "p": gym.spaces.Box(-1, 1, shape=(2,), dtype=float)
 })
-#obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angles, body_position, acceleration, joint_velocities, left_foot_contact, right_foot_contact, left_foot_vel, right_foot_vel, current_body_quat, initial_body_quat, angular_vel, current_vel, joint_torques: {
- #   "left_foot_contact": np.sum(left_foot_contact),
-  #  "right_foot_contact": np.sum(right_foot_contact), 
-   # "left_foot_velocity": np.array([left_foot_vel], dtype='float64'),
-    #"right_foot_velocity": np.array([right_foot_vel], dtype='float64'),
-#    "current_joint_angles": np.array(angles, dtype='float64'),
- #   "current_body_position": np.array(body_position, dtype='float64'),
-  #  "current_joint_velocities": np.array(joint_velocities, dtype='float64'),
-   # "current_body_orientation_quaternion": np.array(current_body_quat, dtype='float64'),
-    #"initial_body_orientation_quaternion": np.array(initial_body_quat, dtype='float64'),
-#    "current_angular_velocity": np.array(angular_vel, dtype='float64'),
- #   "current_lin_vel": np.array(current_vel, dtype='float64'),
-  #  "target_forwards_vel": np.array([0.20, 0, 0]),
-   # "current_joint_torques": np.array(joint_torques, dtype='float64'),
-    #"body_acceleration": np.array(acceleration, dtype='float64'),
-    #"p": np.array([np.sin(2*np.pi*((cycle_time+left_cycle_offset)%1)), np.sin(2*np.pi*((cycle_time+right_cycle_offset)%1))], dtype='float64')
-    #}
-
  
 obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, acceleration: {
     "left_foot_contact": np.sum(WalkingSimulator.foot_contact(1)),
@@ -117,7 +100,6 @@ rew_terms = [
     lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_body_position"][2]-0.34)),
 ]
 action_space = gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=float)
-#action_space = gym.spaces.Box(-10, 10, shape=(10,), dtype=float)
 
 action_function = lambda d: (d.tolist())
 
@@ -143,7 +125,7 @@ def sample_recppo_params(trial: optuna.Trial) -> Dict[str, Any]:
     if(net_arch == "medium"):
         net_arch = [128, 128, 128, 128]
     if(net_arch == "large"):
-        net_arch = [128, 128, 128, 128, 128]
+        net_arch = [128, 300, 300, 128]
 
     if(lstm_hidden_size == "small"):
         lstm_hidden_size = 128
@@ -234,44 +216,55 @@ def objective(trial: optuna.Trial) -> float:
         tensorboard_log=f"tmp/runs/{run.id}"
     )    
 
-    model.learn(
-        **config,
-        callback=WandbCallback(
-            gradient_save_freq=100,
-            model_save_path=f"tmp/models/{run.id}",
-            verbose=2,
-        ),
-    )
+    nan_encountered = False
+
+    try:
+        model.learn(
+            **config,
+            callback=WandbCallback(
+                gradient_save_freq=100,
+                model_save_path=f"tmp/models/{run.id}",
+                verbose=2,
+            ),
+        )
+    except AssertionError as e:
+        print(e)
+        nan_encountered = True
+    finally:
+        model.env.close()
+
+    if nan_encountered:
+        return float("nan")
 
     run.finish()
     
-    rewards = env.get_episode_rewards()
-    average_rewards_for_last_ten_episodes = sum(rewards[-1:-11:-1])/10
+    rewards = env.env_method("get_episode_rewards")
+    last_episode_rewards = rewards[0][-100::1]
+    average_rewards_for_last_episodes = sum(last_episode_rewards)/100
     
-    return average_rewards_for_last_ten_episodes
+    return average_rewards_for_last_episodes
     
 if __name__ == "__main__":
 
-    torch.set_num_threads(1)
+
+    # Add stream handler of stdout to show the messages
+    optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
+    study_name = "prc_optuna"  # Unique identifier of the study.
+    storage_name = "sqlite:///{}.db".format(study_name)
 
     sampler = TPESampler(n_startup_trials=N_STARTUP_TRIALS)
     pruner = MedianPruner(n_startup_trials=N_STARTUP_TRIALS, n_warmup_steps = N_EVALUATIONS // 3)
 
-    study = optuna.create_study(sampler=sampler, pruner=pruner, direction="maximize")
+    study = optuna.create_study(sampler=sampler, pruner=pruner, direction="maximize", study_name=study_name, storage=storage_name)
     try:
-        study.optimize(objective, n_trials=N_TRIALS, timeout=600)
+        study.optimize(objective, n_trials=N_TRIALS, timeout=None)
     except KeyboardInterrupt:
         pass
-
+    
     with open("optuna_logs.txt", "a") as file:
-        log_text = f"Number of finished trials: {len(study.trials)}\nBest trial: {study.best_trial}\nValue: {trial.value}\nparams:\n"
+        log_text = f"Number of finished trials: {len(study.trials)}\nBest trial: {study.best_trial}\n"
         param_string = ""
-        for key,value in trial.params.items():
+        for key,value in study.best_params.items():
             param_string += f"\t{key}: {value}\n"
         log_text += param_string
-        log_text += "User attributes:\n"
-        user_attr_string = ""
-        for key, value in trial.user_attrs.items():
-            user_attr_string += f"\t{key}: {value}\n"
-        log_text += user_attr_string
         file.write(log_text)
