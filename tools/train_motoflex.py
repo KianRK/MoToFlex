@@ -17,8 +17,12 @@ from wandb.integration.sb3 import WandbCallback
 obs_space = gym.spaces.Dict({
     "left_foot_contact": gym.spaces.Discrete(2),
     "right_foot_contact": gym.spaces.Discrete(2),
-    "left_foot_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
-    "right_foot_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
+    "left_foot_forwards_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
+    "right_foot_forwards_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
+    "left_foot_norm_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
+    "right_foot_norm_velocity": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
+    "left_foot_norm_force": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
+    "right_foot_norm_force": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
     "current_joint_angles": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
     "current_body_position": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "current_joint_velocities": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
@@ -30,30 +34,16 @@ obs_space = gym.spaces.Dict({
     "body_acceleration": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
     "p": gym.spaces.Box(-1, 1, shape=(2,), dtype=float)
 })
-#obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, angles, body_position, acceleration, joint_velocities, left_foot_contact, right_foot_contact, left_foot_vel, right_foot_vel, current_body_quat, initial_body_quat, angular_vel, current_vel, joint_torques: {
- #   "left_foot_contact": np.sum(left_foot_contact),
-  #  "right_foot_contact": np.sum(right_foot_contact), 
-   # "left_foot_velocity": np.array([left_foot_vel], dtype='float64'),
-    #"right_foot_velocity": np.array([right_foot_vel], dtype='float64'),
-#    "current_joint_angles": np.array(angles, dtype='float64'),
- #   "current_body_position": np.array(body_position, dtype='float64'),
-  #  "current_joint_velocities": np.array(joint_velocities, dtype='float64'),
-   # "current_body_orientation_quaternion": np.array(current_body_quat, dtype='float64'),
-    #"initial_body_orientation_quaternion": np.array(initial_body_quat, dtype='float64'),
-#    "current_angular_velocity": np.array(angular_vel, dtype='float64'),
- #   "current_lin_vel": np.array(current_vel, dtype='float64'),
-  #  "target_forwards_vel": np.array([0.20, 0, 0]),
-   # "current_joint_torques": np.array(joint_torques, dtype='float64'),
-    #"body_acceleration": np.array(acceleration, dtype='float64'),
-    #"p": np.array([np.sin(2*np.pi*((cycle_time+left_cycle_offset)%1)), np.sin(2*np.pi*((cycle_time+right_cycle_offset)%1))], dtype='float64')
-    #}
-
  
 obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, acceleration: {
     "left_foot_contact": np.sum(WalkingSimulator.foot_contact(1)),
     "right_foot_contact": np.sum(WalkingSimulator.foot_contact(2)), 
-    "left_foot_velocity": np.array([WalkingSimulator.get_left_foot_velocity()[0]], dtype='float64'),
-    "right_foot_velocity": np.array([WalkingSimulator.get_right_foot_velocity()[0]], dtype='float64'),
+    "left_foot_forwards_velocity": np.array([WalkingSimulator.get_left_foot_velocity()[0]], dtype='float64'),
+    "right_foot_forwards_velocity": np.array([WalkingSimulator.get_right_foot_velocity()[0]], dtype='float64'),
+    "left_foot_norm_velocity": np.array([norm(WalkingSimulator.get_left_foot_velocity())], dtype='float64'),
+    "right_foot_norm_velocity": np.array([norm(WalkingSimulator.get_right_foot_velocity())], dtype='float64'),
+    "left_foot_norm_force": np.array([norm(WalkingSimulator.get_left_foot_force())], dtype='float64'),
+    "right_foot_norm_force": np.array([norm(WalkingSimulator.get_right_foot_force())], dtype='float64'),
     "current_joint_angles": np.array(WalkingSimulator.get_joint_angles(), dtype='float64'),
     "current_body_position": np.array(WalkingSimulator.get_6d_pose()[:3], dtype='float64'),
     "current_joint_velocities": np.array(WalkingSimulator.get_joint_velocities(), dtype='float64'),
@@ -67,11 +57,11 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, accel
     }
 
 rew_terms = [
-    lambda _, __, ___, ____: 10,
-    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_left"]),
+    lambda _, __, ___, ____: 10, #bias
+    lambda _, __, ___, periodic_reward_values: np.sum(norm(WalkingSimulator.get_left_foot_force()) * periodic_reward_values["expected_c_frc_left"]),
     lambda _, __, ___, periodic_reward_values: 3*periodic_reward_values["expected_c_frc_left"]*np.abs(WalkingSimulator.get_left_foot_velocity()[0]-0.2),
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * norm(WalkingSimulator.get_left_foot_velocity())),
-    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]),
+    lambda _, __, ___, periodic_reward_values: np.sum(norm(WalkingSimulator.get_right_foot_force()) * periodic_reward_values["expected_c_frc_right"]),
     lambda _, __, ___, periodic_reward_values: 3*periodic_reward_values["expected_c_frc_right"]*np.abs(WalkingSimulator.get_right_foot_velocity()[0]-0.2),
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * norm(WalkingSimulator.get_right_foot_velocity())),
     lambda _, obs, __, ___: - 1 * np.sum(np.abs(3*(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0]))),
@@ -162,7 +152,7 @@ if __name__ == "__main__":
         video_length=300,
     )
 
-    obs_key_to_normalize = ["left_foot_velocity", "right_foot_velocity", "current_joint_angles", "current_body_position", "current_joint_velocities",
+    obs_key_to_normalize = ["left_foot_forwards_velocity", "right_foot_forwards_velocity", "left_foot_norm_velocity", "right_foot_norm_velocity", "left_foot_norm_force", "right_foot_norm_force", "current_joint_angles", "current_body_position", "current_joint_velocities",
             "current_body_orientation_quaternion", "current_angular_velocity", "current_lin_vel",
             "target_forwards_vel", "current_joint_torques", "body_acceleration", "p"]
 
@@ -176,7 +166,7 @@ if __name__ == "__main__":
         env=env,
         **recurrent_ppo_config,
         tensorboard_log=f"tmp/runs/{run.id}"
-        )
+   )
 
     model.learn(
         **config,

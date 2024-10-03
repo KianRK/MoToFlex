@@ -134,11 +134,11 @@ class MoToFlexEnv(gym.Env):
         for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
             self.rewards.append(val)
-        if(self.print_counter%10000==0):
+        if(self.print_counter%1000==0):
             for key, val in zip(reward_log.keys(),self.rewards):
                 reward_log[key] = val
             reward_log['cycle_time'] = str(self.cycle_time)
-            self.append_dict_to_file("reward_log.txt",reward_log)
+            self.append_dict_to_file("train_log.txt",reward_log)
         
         return (sum(self.rewards))
 
@@ -274,11 +274,11 @@ class MoToFlexEnv(gym.Env):
         
         info = self._get_info()
 
-        if self.print_counter%10000==0:
+        if self.print_counter%1000==0:
             with open("action_logs.txt",'a') as file:
                 file.write(f"actions : {action}\nunnormalized actions: {unnormalized_actions}\n\n\n")
             log_obs = copy.deepcopy(observation)
-            self.append_dict_to_file("obs_log.txt",log_obs)
+            self.append_dict_to_file("train_log.txt",log_obs)
 
         self.print_counter+=1
 
