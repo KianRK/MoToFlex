@@ -15,3 +15,4 @@ obs_log.txt
 quaternion_log.txt
 reward_log.txt
 action_logs.txt
+optuna_logs.txt

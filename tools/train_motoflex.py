@@ -217,7 +217,7 @@ def objective(trial: optuna.Trial) -> float:
     )    
 
     nan_encountered = False
-
+    value_error = False
     try:
         model.learn(
             **config,
@@ -230,10 +230,16 @@ def objective(trial: optuna.Trial) -> float:
     except AssertionError as e:
         print(e)
         nan_encountered = True
+    except ValueError as e:
+        print(e)
+        value_error = True
     finally:
         model.env.close()
 
     if nan_encountered:
+        return float("nan")
+
+    if value_error:
         return float("nan")
 
     run.finish()
@@ -255,7 +261,8 @@ if __name__ == "__main__":
     sampler = TPESampler(n_startup_trials=N_STARTUP_TRIALS)
     pruner = MedianPruner(n_startup_trials=N_STARTUP_TRIALS, n_warmup_steps = N_EVALUATIONS // 3)
 
-    study = optuna.create_study(sampler=sampler, pruner=pruner, direction="maximize", study_name=study_name, storage=storage_name)
+    study = optuna.create_study(sampler=sampler, pruner=pruner, direction="maximize", study_name=study_name, storage=storage_name, load_if_exists=True)
+    
     try:
         study.optimize(objective, n_trials=N_TRIALS, timeout=None)
     except KeyboardInterrupt:
