@@ -10,6 +10,7 @@ from typing import Dict
 import optuna
 from optuna.pruners import MedianPruner
 from optuna.samplers import TPESampler
+import logging
 import gymnasium as gym
 import numpy as np
 from numpy.linalg import norm
