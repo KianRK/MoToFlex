@@ -130,7 +130,7 @@ class MoToFlexEnv(gym.Env):
     
     def _reward(self, obs, last_action, periodic_reward_values):
         self.rewards = []
-        reward_log = {"bias": 0, "frc_left": 0, "wanted_spd_left": 0, "spd_left": 0, "frc_right": 0, "wanted_spd_right": 0, "spd_right": 0, "vel": 0, "quat": 0, "act": 0, "vel_y": 0, "torque": 0, "acc": 0, "height": 0}
+        reward_log = {"distance": 0}
         for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
             self.rewards.append(val)
@@ -270,7 +270,7 @@ class MoToFlexEnv(gym.Env):
         standing = abs(self.current_pose[2]-0.34) < 0.10
         contact = self.left_foot_contact or self.right_foot_contact
         truncated = not WalkingSimulator.is_running() or not standing or not contact
-        terminated = self.time == 300
+        terminated = self.time == 150
         
         info = self._get_info()
 

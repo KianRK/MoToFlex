@@ -14,7 +14,7 @@ import logging
 import gymnasium as gym
 import numpy as np
 from numpy.linalg import norm
-from sb3_contrib import RecurrentPPO
+from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecVideoRecorder, VecNormalize
 import wandb
@@ -29,11 +29,12 @@ N_TIMESTEPS = 150000
 EVAL_FREQ = int(N_TIMESTEPS / N_EVALUATIONS)
 N_EVAL_EPISODES = 3
 
+AVERAGE_REWARDS_OVER_N_EPISODES = 50
 
-multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[128, 128, 128])
+multi_input_policy_config = dict(net_arch=[128, 128, 128])
 
-recurrent_ppo_config = {
-        "policy": "MultiInputLstmPolicy",
+ppo_config = {
+        "policy": "MultiInputPolicy",
         "gae_lambda": 0.95,
         "gamma": 0.99,
         "n_steps": 512,
@@ -43,7 +44,7 @@ recurrent_ppo_config = {
         "learning_rate": 0.0001,
         "clip_range": 0.2,
         "use_sde": True,
-        "policy_kwargs": multi_input_lstm_policy_config,
+        "policy_kwargs": multi_input_policy_config,
         "sde_sample_freq": 4,
         "verbose": 1,
 }
@@ -84,20 +85,7 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, accel
     }
 
 rew_terms = [
-    lambda _, __, ___, ____: 10,
-    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_left"]),
-    lambda _, __, ___, periodic_reward_values: 3*periodic_reward_values["expected_c_frc_left"]*np.abs(WalkingSimulator.get_left_foot_velocity()[0]-0.2),
-    lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * norm(WalkingSimulator.get_left_foot_velocity())),
-    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]),
-    lambda _, __, ___, periodic_reward_values: 3*periodic_reward_values["expected_c_frc_right"]*np.abs(WalkingSimulator.get_right_foot_velocity()[0]-0.2),
-    lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * norm(WalkingSimulator.get_right_foot_velocity())),
-    lambda _, obs, __, ___: - 1 * np.sum(np.abs(3*(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0]))),
-    lambda env, obs, _, __: -1 * np.sum(env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])),
-    lambda _, __, last_action, ___: -0.01 * np.sum(np.abs(last_action)),
-    lambda _, obs, __, ___: -1 * np.abs(obs["current_lin_vel"][1]),
-    lambda _, obs, __, ___: -0.01 * np.sum(np.abs(obs["current_joint_torques"])),
-    lambda _, obs, __, ___: -0.1 * np.sum(np.abs(obs["body_acceleration"])),
-    lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_body_position"][2]-0.34)),
+    lambda _, obs, __, ___: -10 * np.sum(0.30-obs["current_body_position"][0]),
 ]
 action_space = gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=float)
 
@@ -108,7 +96,7 @@ random_push = {
     "force_range_x": [500, 1000]
 }
 
-def sample_recppo_params(trial: optuna.Trial) -> Dict[str, Any]:
+def sample_ppo_params(trial: optuna.Trial) -> Dict[str, Any]:
     gamma = 1.0 - trial.suggest_float("gamma", 0.0001, 0.1, log=True)
     max_grad_norm = trial.suggest_float("max_grad_norm",0.3, 5.0, log=True)
     gae_lambda = trial.suggest_float("gae_lambda", 0.001, 0.2, log=True)
@@ -117,7 +105,6 @@ def sample_recppo_params(trial: optuna.Trial) -> Dict[str, Any]:
     ent_coef = trial.suggest_float("ent_coeff", 0.001, 0.1, log=True)
     ortho_init = trial.suggest_categorical("ortho_init", [False,True])
     net_arch = trial.suggest_categorical("net_arch", ["small", "medium", "large"])
-    lstm_hidden_size = trial.suggest_categorical("lstm_hidden_size", ["small", "large"])
     activation_fn = trial.suggest_categorical("activation_fn", ["tanh", "relu"])
 
     if(net_arch == "small"):
@@ -126,11 +113,6 @@ def sample_recppo_params(trial: optuna.Trial) -> Dict[str, Any]:
         net_arch = [128, 128, 128, 128]
     if(net_arch == "large"):
         net_arch = [128, 300, 300, 128]
-
-    if(lstm_hidden_size == "small"):
-        lstm_hidden_size = 128
-    if(lstm_hidden_size == "large"):
-        lstm_hidden_size = 300
 
     activation_fn = {"tanh": nn.Tanh, "relu": nn.ReLU}[activation_fn]
 
@@ -144,7 +126,6 @@ def sample_recppo_params(trial: optuna.Trial) -> Dict[str, Any]:
             "policy_kwargs": {
                 "ortho_init": ortho_init,
                 "net_arch": net_arch,
-                "lstm_hidden_size": lstm_hidden_size,
                 "activation_fn": activation_fn
             },
     }
@@ -165,8 +146,8 @@ def make_env():
     return env
 
 def objective(trial: optuna.Trial) -> float:
-    kwargs = recurrent_ppo_config
-    kwargs.update(sample_recppo_params(trial))
+    kwargs = ppo_config
+    kwargs.update(sample_ppo_params(trial))
     
     config = {
         "total_timesteps": N_TIMESTEPS
@@ -174,7 +155,7 @@ def objective(trial: optuna.Trial) -> float:
 
     all_configs = {
         "learn_conf": config,
-        "recurrent_ppo_config": kwargs,
+        "ppo_config": kwargs,
         "reward_terms": rew_terms,
         "observation_space": obs_space,
         "observation_terms": obs_terms,
@@ -183,7 +164,7 @@ def objective(trial: optuna.Trial) -> float:
     }
     
     run = wandb.init(
-        name="recurrent-ppo",
+        name="ppo_potential_based",
         project="sb3",
         config=all_configs,
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
@@ -197,7 +178,7 @@ def objective(trial: optuna.Trial) -> float:
         env,
         f"tmp/videos/{run.id}",
         record_video_trigger=lambda x: x % 30000 == 0,
-        video_length=300,
+        video_length=200,
     )
     
     obs_key_to_normalize = ["left_foot_velocity", "right_foot_velocity", "current_joint_angles", "current_body_position", "current_joint_velocities",
@@ -210,7 +191,7 @@ def objective(trial: optuna.Trial) -> float:
             norm_obs_keys = obs_key_to_normalize
     )
 
-    model = RecurrentPPO(
+    model = PPO(
         env=env,
         **kwargs,
         tensorboard_log=f"tmp/runs/{run.id}"
@@ -245,21 +226,21 @@ def objective(trial: optuna.Trial) -> float:
     run.finish()
     
     rewards = env.env_method("get_episode_rewards")
-    last_episode_rewards = rewards[0][-100::1]
-    average_rewards_for_last_episodes = sum(last_episode_rewards)/100
+    last_n_episode_rewards = rewards[0][-50::1]
+    average_rewards_for_last_n_episodes = sum(last_n_episode_rewards)/AVERAGE_REWARDS_OVER_N_EPISODES
     
-    return average_rewards_for_last_episodes
+    return average_rewards_for_last_n_episodes
     
 if __name__ == "__main__":
 
 
     # Add stream handler of stdout to show the messages
     optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
-    study_name = "prc_optuna"  # Unique identifier of the study.
+    study_name = "pbr_optuna"  # Unique identifier of the study.
     storage_name = "sqlite:///{}.db".format(study_name)
 
     sampler = TPESampler(n_startup_trials=N_STARTUP_TRIALS)
-    pruner = MedianPruner(n_startup_trials=N_STARTUP_TRIALS, n_warmup_steps = N_EVALUATIONS // 3)
+    pruner = MedianPruner(n_startup_trials=N_STARTUP_TRIALS, n_warmup_steps = 1e5)
 
     study = optuna.create_study(sampler=sampler, pruner=pruner, direction="maximize", study_name=study_name, storage=storage_name, load_if_exists=True)
     
@@ -267,11 +248,3 @@ if __name__ == "__main__":
         study.optimize(objective, n_trials=N_TRIALS, timeout=None)
     except KeyboardInterrupt:
         pass
-    
-    with open("optuna_logs.txt", "a") as file:
-        log_text = f"Number of finished trials: {len(study.trials)}\nBest trial: {study.best_trial}\n"
-        param_string = ""
-        for key,value in study.best_params.items():
-            param_string += f"\t{key}: {value}\n"
-        log_text += param_string
-        file.write(log_text)
