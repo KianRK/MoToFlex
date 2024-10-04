@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "WalkingSimulator",
+            "type": "lldb",
+            "request": "launch",
+            "program": "Simulator/bin/WalkingSimulator",
+            "args": [
+                "config/50.cfg"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "MoToFlex PPO",
+            "type": "python",
+            "request": "launch",
+            "program": "tools/train_motoflex.py",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "debug"
+            ],
+        },
+        {
+            "name": "C/C++: clang Aktive Datei erstellen und debuggen",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "C/C++: clang Aktive Datei kompilieren"
+        }
+    ]
+}

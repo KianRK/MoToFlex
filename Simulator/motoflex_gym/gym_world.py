@@ -130,11 +130,11 @@ class MoToFlexEnv(gym.Env):
     
     def _reward(self, obs, last_action, periodic_reward_values):
         self.rewards = []
-        reward_log = {"bias": 0, "frc_left": 0, "wanted_spd_left": 0, "spd_left": 0, "frc_right": 0, "wanted_spd_right": 0, "spd_right": 0, "vel": 0, "quat": 0, "act": 0, "vel_y": 0, "torque": 0, "acc": 0, "height": 0}
+        reward_log = {"bias": 0, "frc_left": 0, "wanted_spd_left": 0, "spd_left": 0, "frc_right": 0, "wanted_spd_right": 0, "spd_right": 0, "vel": 0, "quat": 0, "act": 0, "vel_y": 0, "torque": 0, "acc": 0}
         for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
             self.rewards.append(val)
-        if(self.print_counter%1000==0):
+        if(self.print_counter%10000==0):
             for key, val in zip(reward_log.keys(),self.rewards):
                 reward_log[key] = val
             reward_log['cycle_time'] = str(self.cycle_time)
@@ -234,7 +234,7 @@ class MoToFlexEnv(gym.Env):
 
 
         #Simulation runs with 100 Hz and robot should do one step per foot per second so one cycle period should be one second.
-        self.cycle_time = self.time % 101 / 100
+        self.cycle_time = (self.time % 100) / 100
         #Modulo operation to ensure that the phase value is between 0 and 1
         left_swing_phase_value = self.compute_expected_phase_value((self.cycle_time + self.left_cycle_offset)%1)
         left_stance_phase_value = 1 - left_swing_phase_value
@@ -267,14 +267,14 @@ class MoToFlexEnv(gym.Env):
         
         self.last_velocity = self.current_velocity
         
-        standing = abs(self.current_pose[2]-0.34) < 0.10
+        standing = abs(self.current_pose[2]-0.34) < 0.15
         contact = self.left_foot_contact or self.right_foot_contact
-        truncated = not WalkingSimulator.is_running() or not standing or not contact
-        terminated = self.time == 300
+        truncated = self.time == 150
+        terminated = not WalkingSimulator.is_running() or not standing
         
         info = self._get_info()
 
-        if self.print_counter%1000==0:
+        if self.print_counter%10000==0:
             with open("action_logs.txt",'a') as file:
                 file.write(f"actions : {action}\nunnormalized actions: {unnormalized_actions}\n\n\n")
             log_obs = copy.deepcopy(observation)
