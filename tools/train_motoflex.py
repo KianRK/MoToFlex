@@ -4,6 +4,7 @@ sys.path.append('Simulator')
 from motoflex_gym import WalkingSimulator
 from motoflex_gym.gym_world import MoToFlexEnv
 
+import optuna
 import gymnasium as gym
 import numpy as np
 from numpy.linalg import norm
