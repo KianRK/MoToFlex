@@ -58,18 +58,16 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, accel
 
 rew_terms = [
     lambda _, __, ___, ____: 10, #bias
-    lambda _, __, ___, periodic_reward_values: np.sum(norm(WalkingSimulator.get_left_foot_force()) * periodic_reward_values["expected_c_frc_left"]),
-    lambda _, __, ___, periodic_reward_values: 3*periodic_reward_values["expected_c_frc_left"]*np.abs(WalkingSimulator.get_left_foot_velocity()[0]-0.2),
+    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_left"]),
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * norm(WalkingSimulator.get_left_foot_velocity())),
-    lambda _, __, ___, periodic_reward_values: np.sum(norm(WalkingSimulator.get_right_foot_force()) * periodic_reward_values["expected_c_frc_right"]),
-    lambda _, __, ___, periodic_reward_values: 3*periodic_reward_values["expected_c_frc_right"]*np.abs(WalkingSimulator.get_right_foot_velocity()[0]-0.2),
+    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]),
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * norm(WalkingSimulator.get_right_foot_velocity())),
     lambda _, obs, __, ___: - 1 * np.sum(np.abs(3*(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0]))),
     lambda env, obs, _, __: -1 * np.sum(env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])),
     lambda _, __, last_action, ___: -0.01 * np.sum(np.abs(last_action)),
     lambda _, obs, __, ___: -1 * np.abs(obs["current_lin_vel"][1]),
-    lambda _, obs, __, ___: -0.01 * np.sum(np.abs(obs["current_joint_torques"])),
-    lambda _, obs, __, ___: -0.1 * np.sum(np.abs(obs["body_acceleration"])),
+    lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_joint_torques"])),
+    lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["body_acceleration"])),
     lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_body_position"][2]-0.34)),
 ]
 action_space = gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=float)
@@ -99,14 +97,14 @@ def make_env():
 
 if __name__ == "__main__":
     
-    multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2, net_arch=[128, 128, 128])
+    multi_input_lstm_policy_config = dict(lstm_hidden_size=128, n_lstm_layers=2)
 
     recurrent_ppo_config = {
         "policy": "MultiInputLstmPolicy",
         "gae_lambda": 0.95,
         "gamma": 0.99,
-        "n_steps": 512,
-        "batch_size": 16,
+        "n_steps": 1024,
+        "batch_size": 64,
         "n_epochs": 4,
         "ent_coef": 0.025,
         "learning_rate": 0.0001,
