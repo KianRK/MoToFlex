@@ -38,6 +38,7 @@ recurrent_ppo_config = {
         "n_steps": 4096,
         "batch_size": 2250,
         "n_epochs": 4,
+        "target_kl": 0.015,
         "ent_coef": 0.025,
         "learning_rate": 0.0001,
         "clip_range": 0.2,
