@@ -71,6 +71,7 @@ class MoToFlexEnv(gym.Env):
         self.render_mode = render_mode
         self.last_polar = None
 
+        reward_log = {"bias": 0, "frc_left": 0, "spd_left": 0, "frc_right": 0, "spd_right": 0, "vel": 0, "vel_y": 0, "quat": 0, "action": 0, "torque": 0, "acc": 0}
         self.lower_joint_limits = [-0.38, -0.79, -0.09, -0.28, -0.174, -0.38, -0.79, -0.09, -0.28, -0.174]
         self.upper_joint_limits = [0.38, 0.48, 0.79, 0.28, 0.174, 0.38, 0.48, 0.79, 0.28, 0.174]
         self.joint_ranges = [0.76, 1.27, 0.88, 0.56, 0.348, 0.76, 1.27, 0.88, 0.56, 0.348]
@@ -130,15 +131,9 @@ class MoToFlexEnv(gym.Env):
     
     def _reward(self, obs, last_action, periodic_reward_values):
         self.rewards = []
-        reward_log = {"bias": 0, "frc_left": 0, "spd_left": 0, "frc_right": 0, "spd_right": 0, "vel": 0, "vel_y": 0, "quat": 0, "action": 0, "torque": 0, "acc": 0}
         for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
             self.rewards.append(val)
-        if(self.print_counter%1000==0):
-            for key, val in zip(reward_log.keys(),self.rewards):
-                reward_log[key] = val
-            reward_log['cycle_time'] = str(self.cycle_time)
-            self.append_dict_to_file("train_log.txt",reward_log)
         
         return (sum(self.rewards))
 
@@ -279,6 +274,10 @@ class MoToFlexEnv(gym.Env):
                 file.write(f"actions : {action}\nunnormalized actions: {unnormalized_actions}\n\n\n")
             log_obs = copy.deepcopy(observation)
             self.append_dict_to_file("train_log.txt",log_obs)
+            for key, val in zip(reward_log.keys(),self.rewards):
+                reward_log[key] = val
+            reward_log['cycle_time'] = str(self.cycle_time)
+            self.append_dict_to_file("train_log.txt",reward_log)
 
         self.print_counter+=1
 
