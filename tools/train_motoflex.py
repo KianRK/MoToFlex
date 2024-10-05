@@ -95,13 +95,12 @@ rew_terms = [
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * norm(WalkingSimulator.get_left_foot_velocity())),
     lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]),
     lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * norm(WalkingSimulator.get_right_foot_velocity())),
-    lambda _, obs, __, ___: - 1 * np.sum(np.abs(3*(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0]))),
-    lambda env, obs, _, __: -1 * np.sum(env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])),
-    lambda _, __, last_action, ___: -0.01 * np.sum(np.abs(last_action)),
+    lambda _, obs, __, ___: - 1 * np.sum(np.abs(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0])),
     lambda _, obs, __, ___: -1 * np.abs(obs["current_lin_vel"][1]),
+    lambda env, obs, _, __: -1 * np.sum(env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])),
+    lambda _, __, last_action, ___: -1 * np.sum(np.abs(last_action)),
     lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_joint_torques"])),
     lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["body_acceleration"])),
-    lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_body_position"][2]-0.34)),
 ]
 action_space = gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=float)
 #action_space = gym.spaces.Box(-10, 10, shape=(10,), dtype=float)
@@ -118,6 +117,7 @@ def sample_recppo_params(trial: optuna.Trial) -> Dict[str, Any]:
     max_grad_norm = trial.suggest_float("max_grad_norm",0.3, 5.0, log=True)
     gae_lambda = trial.suggest_float("gae_lambda", 0.001, 0.2, log=True)
     ent_coef = trial.suggest_float("ent_coeff", 0.001, 0.1, log=True)
+    target_kl = trial.suggest_float("target_kl", 0.015, 0.05, log=True)
     ortho_init = trial.suggest_categorical("ortho_init", [False,True])
     activation_fn = trial.suggest_categorical("activation_fn", ["tanh", "relu"])
 
@@ -128,6 +128,7 @@ def sample_recppo_params(trial: optuna.Trial) -> Dict[str, Any]:
             "max_grad_norm": max_grad_norm,
             "gae_lambda": gae_lambda,
             "ent_coef": ent_coef,
+            "target_kl": target_kl,
             "policy_kwargs": {
                 "ortho_init": ortho_init,
                 "activation_fn": activation_fn
