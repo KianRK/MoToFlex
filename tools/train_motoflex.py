@@ -185,9 +185,9 @@ def objective(trial: optuna.Trial) -> float:
         video_length=300,
     )
 
-    obs_key_to_normalize = ["left_foot_forwards_velocity", "right_foot_forwards_velocity", "left_foot_norm_velocity", "right_foot_norm_velocity", "current_joint_angles", "current_body_position", "current_joint_velocities",
-            "current_body_orientation_quaternion", "current_angular_velocity", "current_lin_vel",
-            "target_forwards_vel", "current_joint_torques", "body_acceleration", "p"]
+    obs_key_to_normalize = ["left_foot_forwards_velocity", "right_foot_forwards_velocity", "left_foot_norm_velocity", "right_foot_norm_velocity", 
+            "current_joint_angles", "current_body_position", "current_joint_velocities", "current_body_orientation_quaternion", "current_angular_velocity", 
+            "current_lin_vel", "target_forwards_vel", "current_joint_torques", "body_acceleration", "p"]
 
     env = VecNormalize(
             env,
