@@ -68,8 +68,8 @@ class MoToFlexEnv(gym.Env):
         self.last_polar = None
 
         self.reward_log = {"bias": 0, "frc_left": 0, "spd_left": 0, "frc_right": 0, "spd_right": 0, "vel": 0, "vel_y": 0, "quat": 0, "action": 0, "torque": 0, "acc": 0}
-        self.lower_joint_limits = [-0.38, -0.79, -0.09, -0.28, -0.174, -0.38, -0.79, -0.09, -0.28, -0.174]
-        self.upper_joint_limits = [0.38, 0.48, 0.79, 0.28, 0.174, 0.38, 0.48, 0.79, 0.28, 0.174]
+        self.lower_joint_limits = [-0.38, -0.48, -0.79, -0.28, -0.174, -0.38, -0.48, -0.79, -0.28, -0.174]
+        self.upper_joint_limits = [0.38, 0.79, 0.09, 0.28, 0.174, 0.38, 0.79, 0.09, 0.28, 0.174]
         self.joint_ranges = [0.76, 1.27, 0.88, 0.56, 0.348, 0.76, 1.27, 0.88, 0.56, 0.348]
 
         """
