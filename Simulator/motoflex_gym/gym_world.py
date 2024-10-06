@@ -71,9 +71,9 @@ class MoToFlexEnv(gym.Env):
         self.render_mode = render_mode
         self.last_polar = None
 
-        self.lower_joint_limits = [-0.38, -1.56, -0.09, -0.28, -0.174, -0.79, -1.56, -0.09, -0.28, -0.174]
-        self.upper_joint_limits = [0.79, 0.48, 2.11, 0.28, 0.174, 0.38, 0.48, 2.12, 0.28, 0.174]
-        self.joint_ranges = [1.17, 2.04, 2.2, 0.56, 0.348, 1.17, 2.04, 2.21, 0.56, 0.348]
+        self.lower_joint_limits = [-0.38, -0.48, -0.79, -0.28, -0.174, -0.38, -0.48, -0.79, -0.28, -0.174]
+        self.upper_joint_limits = [0.38, 0.79, 0.09, 0.28, 0.174, 0.38, 0.79, 0.09, 0.28, 0.174]
+        self.joint_ranges = [0.76, 1.27, 0.88, 0.56, 0.348, 0.76, 1.27, 0.88, 0.56, 0.348]
 
         """
         If human-rendering is used, `self.window` will be a reference
