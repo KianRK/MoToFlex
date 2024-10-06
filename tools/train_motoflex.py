@@ -66,11 +66,12 @@ obs_space = gym.spaces.Dict({
     "target_forwards_vel": gym.spaces.Box(-np.inf, np.inf, shape=(3,), dtype=float),
     "current_joint_torques": gym.spaces.Box(-np.inf, np.inf, shape=(10,), dtype=float),
     "body_acceleration": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
+    "rot_acceleration": gym.spaces.Box(-np.inf, np.inf, shape=(1,), dtype=float),
     "p": gym.spaces.Box(-1, 1, shape=(2,), dtype=float),
     "r": gym.spaces.Box(0.5, 0.5, shape=(2,), dtype=float)
 })
  
-obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, acceleration: {
+obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, acceleration, rot_acceleration: {
     "left_foot_contact": np.sum(WalkingSimulator.foot_contact(1)),
     "right_foot_contact": np.sum(WalkingSimulator.foot_contact(2)), 
     "left_foot_forwards_velocity": np.array([WalkingSimulator.get_left_foot_velocity()[0]], dtype='float64'),
@@ -86,22 +87,23 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, accel
     "target_forwards_vel": np.array([0.20, 0, 0]),
     "current_joint_torques": np.array(WalkingSimulator.get_joint_torques(), dtype='float64'),
     "body_acceleration": np.array(acceleration, dtype='float64'),
+    "rot_acceleration": np.array(rot_acceleration, dtype='float64'),
     "p": np.array([np.sin(2*np.pi*((cycle_time+left_cycle_offset)%1)), np.sin(2*np.pi*((cycle_time+right_cycle_offset)%1))], dtype='float64'),
     "r": np.array([0.5, 0.5], dtype='float64')
     }
 
 rew_terms = [
     lambda _, __, ___, ____: 10, #bias
-    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_left"]),
-    lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * norm(WalkingSimulator.get_left_foot_velocity())),
-    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]),
-    lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * norm(WalkingSimulator.get_right_foot_velocity())),
-    lambda _, obs, __, ___: - 1 * np.sum(np.abs(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0])),
-    lambda _, obs, __, ___: -1 * np.abs(obs["current_lin_vel"][1]),
-    lambda env, obs, _, __: -1 * np.sum(env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])),
-    lambda _, __, last_action, ___: -1 * np.sum(np.abs(last_action)),
-    lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["current_joint_torques"])),
-    lambda _, obs, __, ___: -1 * np.sum(np.abs(obs["body_acceleration"])),
+    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_left"]), #left foot force
+    lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * (1-np.exp(-2*norm(WalkingSimulator.get_left_foot_velocity())**2))), #left foot speed
+    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]), #right foot force
+    lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * (1-np.exp(-2*norm(WalkingSimulator.get_right_foot_velocity())**2))), #right foot speed
+    lambda _, obs, __, ___: - 1 * np.sum((1-np.exp(-2*np.abs(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0])))), #x velocity
+    lambda _, obs, __, ___: -1 * (1-np.exp(-2*np.abs(obs["current_lin_vel"][1]))), #y velocity
+    lambda env, obs, _, __: -1 * (1-np.exp(-3*np.sum((1-env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])**2)))), #quaternion difference
+    lambda _, __, last_action, ___: -1 * np.sum(1-np.exp(-5*norm(last_action))), #action delta
+    lambda _, obs, __, ___: -1 * np.sum(1-np.exp(-0.05*norm(obs["current_joint_torques"]))), #torques
+    lambda _, obs, __, ___: -1 * np.sum(1-np.exp(-0.10*(norm(obs["current_angular_velocity"])+obs["rot_acceleration"]))), #acceleration
 ]
 action_space = gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=float)
 #action_space = gym.spaces.Box(-10, 10, shape=(10,), dtype=float)
@@ -170,7 +172,7 @@ def objective(trial: optuna.Trial) -> float:
     }
 
     run = wandb.init(
-        name="recurrent-ppo",
+        name="rew_recurrent-ppo",
         project="sb3",
         config=all_configs,
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
@@ -189,7 +191,7 @@ def objective(trial: optuna.Trial) -> float:
 
     obs_key_to_normalize = ["left_foot_forwards_velocity", "right_foot_forwards_velocity", "left_foot_norm_velocity", "right_foot_norm_velocity", 
             "current_joint_angles", "current_body_position", "current_joint_velocities", "current_body_orientation_quaternion", "current_angular_velocity", 
-            "current_lin_vel", "target_forwards_vel", "current_joint_torques", "body_acceleration", "p"]
+            "current_lin_vel", "target_forwards_vel", "current_joint_torques", "body_acceleration", "rot_acceleration", "p", "r"]
 
     env = VecNormalize(
             env,
@@ -244,7 +246,7 @@ if __name__ == "__main__":
 
     # Add stream handler of stdout to show the messages
     optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
-    study_name = "prc_original_optuna"  # Unique identifier of the study.
+    study_name = "prc_original_rewards_optuna"  # Unique identifier of the study.
     storage_name = "sqlite:///{}.db".format(study_name)
 
     sampler = TPESampler(n_startup_trials=N_STARTUP_TRIALS)
@@ -257,10 +259,3 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
 
-    with open("optuna_logs.txt", "a") as file:
-        log_text = f"Number of finished trials: {len(study.trials)}\nBest trial: {study.best_trial}\n"
-        param_string = ""
-        for key,value in study.best_params.items():
-            param_string += f"\t{key}: {value}\n"
-        log_text += param_string
-        file.write(log_text)

@@ -14,3 +14,4 @@ angle_logs.txt
 obs_log.txt
 quaternion_log.txt
 reward_log.txt
+*optuna.db
