@@ -17,4 +17,5 @@ reward_log.txt
 *optuna.db
 action_logs.txt
 train_log.txt
+config/*
 config/BestOf.ftn
