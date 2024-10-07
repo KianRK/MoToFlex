@@ -71,8 +71,8 @@ class MoToFlexEnv(gym.Env):
         self.render_mode = render_mode
         self.last_polar = None
 
-        self.lower_joint_limits = [-0.38, -0.48, -0.79, -0.28, -0.174, -0.38, -0.48, -0.79, -0.28, -0.174]
-        self.upper_joint_limits = [0.38, 0.79, 0.09, 0.28, 0.174, 0.38, 0.79, 0.09, 0.28, 0.174]
+        self.lower_joint_limits = [-0.379, -0.48, -0.79, -0.28, -0.174, -0.379, -0.48, -0.79, -0.28, -0.174]
+        self.upper_joint_limits = [0.379, 0.79, 0.09, 0.28, 0.174, 0.379, 0.79, 0.09, 0.28, 0.174]
         self.joint_ranges = [0.76, 1.27, 0.88, 0.56, 0.348, 0.76, 1.27, 0.88, 0.56, 0.348]
 
         """
