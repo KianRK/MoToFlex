@@ -283,7 +283,7 @@ class MoToFlexEnv(gym.Env):
         
         standing = abs(self.current_pose[2]-0.34) < 0.10
         contact = self.left_foot_contact or self.right_foot_contact
-        truncated = not WalkingSimulator.is_running() or not standing or not contact
+        truncated = not WalkingSimulator.is_running() or not standing
         terminated = self.time == 300
         
         info = self._get_info()
