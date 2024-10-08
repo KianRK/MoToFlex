@@ -97,6 +97,13 @@ class MoToFlexEnv(gym.Env):
         self.current_pose = np.zeros(shape=(6,), dtype='float64')
         self.left_foot_vel = np.zeros(shape=(1,), dtype='float64')
         self.right_foot_vel = np.zeros(shape=(1,), dtype='float64')
+        self.action_history = np.zeros(shape=(4,10), dtype='float64')
+        self.joint_angle_history = np.zeros.(shape=(4,10), dtype='float64')
+        self.body_position_history = np.zeros(shape=(4,3), dtype='float64')
+        self.body_orientation_history = np.zeros(shape=(4,4), dtype='float64')
+        self.linear_vel_history = np.zeros(shape=(4,3), dtype='float64')
+        self.angular_vel_history = np.zeros(shape=(4,3), dtype='float64')
+
 
         
 
@@ -265,6 +272,13 @@ class MoToFlexEnv(gym.Env):
         observation = self._get_obs()
         reward = self._reward(observation, delta_action, periodic_reward_values)
         
+        self.action_history = self.update_history(self.action_history, data)
+        self.joint_angle_history = self.update_history(self.joint_angle_history, observation["current_joint_angles"])
+        self.body_position_history = self.update_history(self.body_position_history, observation["current_body_position"])
+        self.body_orientation_history = self.update_history(self.body_orientation_history, observation["current_body_orientation_quaternion"])
+        self.linear_vel_history = self.update_history(self.linear_vel_history, observation["current_lin_vel"])
+        self.angular_vel_history = self.update_history(self.angular_vel_history, observation["current_angular_velocity"])
+
         self.last_velocity = self.current_velocity
         
         standing = abs(self.current_pose[2]-0.34) < 0.10
@@ -460,6 +474,13 @@ class MoToFlexEnv(gym.Env):
 
         return np.concatenate([left_cur_polar, right_cur_polar])
     
+
+    def update_history(self, observation_history, observation):
+        observation_history = observation_history[:-1]
+        new_history = np.vstack(history, observation_history)
+        return new_history
+
+
     def unnormalize_actions(self, actions):
         unnormalized_actions = []
         for i, action in enumerate(actions):
