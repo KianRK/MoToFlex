@@ -60,6 +60,8 @@ class MoToFlexEnv(gym.Env):
         self.vonmises_kappa = vonmises_kappa
         self.last_velocity = [0, 0, 0]
         self.current_velocity = [0, 0, 0]
+        self.last_rot_velocity = [0, 0, 0]
+        self.current_rot_velocity = [0, 0, 0]
         self.last_action = np.zeros(10)
         notebook_path = os.path.dirname(os.path.abspath(__file__))
         os.chdir(notebook_path + "/../../")
@@ -90,6 +92,7 @@ class MoToFlexEnv(gym.Env):
         self.angular_vel=np.zeros(shape=(3,), dtype='float64')
         self.current_angles = np.zeros(shape=(10,), dtype='float64')
         self.acceleration = np.array([0], dtype='float64')
+        self.rot_acceleration = np.array([0], dtype='float64')
         self.joint_velocities = np.zeros(shape=(10,), dtype='float64')
         self.left_foot_contact=True
         self.right_foot_contact=True
@@ -98,7 +101,7 @@ class MoToFlexEnv(gym.Env):
         self.left_foot_vel = np.zeros(shape=(1,), dtype='float64')
         self.right_foot_vel = np.zeros(shape=(1,), dtype='float64')
         self.action_history = np.zeros(shape=(4,10), dtype='float64')
-        self.joint_angle_history = np.zeros.(shape=(4,10), dtype='float64')
+        self.joint_angle_history = np.zeros(shape=(4,10), dtype='float64')
         self.body_position_history = np.zeros(shape=(4,3), dtype='float64')
         self.body_orientation_history = np.zeros(shape=(4,4), dtype='float64')
         self.linear_vel_history = np.zeros(shape=(4,3), dtype='float64')
@@ -108,7 +111,7 @@ class MoToFlexEnv(gym.Env):
         
 
     def _get_obs(self):
-        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset, acceleration= self.acceleration)
+        _obs = self.observation_terms(self, cycle_time=self.cycle_time, left_cycle_offset=self.left_cycle_offset, right_cycle_offset=self.right_cycle_offset, acceleration= self.acceleration, rot_acceleration=self.rot_acceleration)
         return _obs
 
     def _get_info(self):
@@ -200,7 +203,12 @@ class MoToFlexEnv(gym.Env):
         acc_norm = norm(4*(np.array(self.current_velocity) - np.array(self.last_velocity)))
         acc_norm = acc_norm.reshape(1)
         return acc_norm
-    
+
+    def get_rotational_acceleration(self):
+        acc_norm = norm(4*(np.array(self.current_rot_velocity) - np.array(self.last_rot_velocity)))
+        acc_norm = acc_norm.reshape(1)
+        return acc_norm
+
     @staticmethod
     def _random_from_range(range):
         random_force = random.randint(*range)
@@ -264,7 +272,9 @@ class MoToFlexEnv(gym.Env):
         self.left_foot_contact = WalkingSimulator.foot_contact(1)
         self.right_foot_contact = WalkingSimulator.foot_contact(2)
         self.current_velocity = WalkingSimulator.get_velocity()
+        self.current_rot_velocity = WalkingSimulator.get_angular_velocity()
         self.acceleration = self.get_body_acceleration()
+        self.rot_acceleration = self.get_rotational_acceleration()
         self.body_orientation_quat = WalkingSimulator.get_body_orientation_quaternion()
         self.current_pose = WalkingSimulator.get_6d_pose()
         # Make sure at least one foot has contact to ground
@@ -280,7 +290,8 @@ class MoToFlexEnv(gym.Env):
         self.angular_vel_history = self.update_history(self.angular_vel_history, observation["current_angular_velocity"])
 
         self.last_velocity = self.current_velocity
-        
+        self.last_rot_velocity = self.current_rot_velocity
+
         standing = abs(self.current_pose[2]-0.34) < 0.10
         contact = self.left_foot_contact or self.right_foot_contact
         truncated = not WalkingSimulator.is_running() or not standing
@@ -477,7 +488,7 @@ class MoToFlexEnv(gym.Env):
 
     def update_history(self, observation_history, observation):
         observation_history = observation_history[:-1]
-        new_history = np.vstack(history, observation_history)
+        new_history = np.vstack((observation, observation_history))
         return new_history
 
 
