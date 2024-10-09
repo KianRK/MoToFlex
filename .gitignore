@@ -15,6 +15,6 @@ obs_log.txt
 quaternion_log.txt
 reward_log.txt
 config/BestOf.ftn
-distance_log.txti
-config/
+distance_log.txt
+config/*
 
