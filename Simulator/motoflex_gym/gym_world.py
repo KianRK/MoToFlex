@@ -273,7 +273,7 @@ class MoToFlexEnv(gym.Env):
         
         if truncated or terminated:
             with open("distance_log.txt", "a") as file:
-                file.write(f"Time: {self.time} Pose: {self.current_pose[:2]}\n")
+                file.write(f"Time: {self.time} Pose: {self.current_pose[:3]}\n")
 
         info = self._get_info()
 
