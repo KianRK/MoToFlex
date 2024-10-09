@@ -229,8 +229,7 @@ class MoToFlexEnv(gym.Env):
                 WalkingSimulator.add_force(0, f_x, f_y, f_z)
                 self.pushes.append([f_x, f_y, f_z])
     
-        unnormalized_actions = self.unnormalize_actions(action)
-        WalkingSimulator.step(unnormalized_actions)
+        WalkingSimulator.step(action)
 
 
         #Simulation runs with 100 Hz and robot should do one step per foot per second so one cycle period should be one second.
@@ -269,14 +268,16 @@ class MoToFlexEnv(gym.Env):
         
         standing = abs(self.current_pose[2]-0.34) < 0.15
         contact = self.left_foot_contact or self.right_foot_contact
-        truncated = self.time == 150
+        truncated = self.time == 300
         terminated = not WalkingSimulator.is_running() or not standing
         
+        if truncated or terminated:
+            with open("distance_log.txt", "a") as file:
+                file.write(f"Time: {self.time} Pose: {self.current_pose[:2]}\n")
+
         info = self._get_info()
 
         if self.print_counter%10000==0:
-            with open("action_logs.txt",'a') as file:
-                file.write(f"actions : {action}\nunnormalized actions: {unnormalized_actions}\n\n\n")
             log_obs = copy.deepcopy(observation)
             self.append_dict_to_file("train_log.txt",log_obs)
 
