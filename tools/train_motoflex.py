@@ -177,6 +177,6 @@ if __name__ == "__main__":
             model_save_path=f"tmp/models/{run.id}",
             verbose=2,
         ),
-    model.save("prc_model")
     )
+    model.save("prc_model")
     run.finish()
