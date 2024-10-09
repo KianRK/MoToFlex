@@ -16,3 +16,6 @@ quaternion_log.txt
 reward_log.txt
 action_logs.txt
 optuna_logs.txt
+config/BestOf.ftn
+config/*
+train_log.txt
