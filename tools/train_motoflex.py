@@ -60,17 +60,17 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, accel
     }
 
 rew_terms = [
-    lambda _, __, ___, ____: 10, #bias
-    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_left"]), #left foot force
-    lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * (1-np.exp(-2*norm(WalkingSimulator.get_left_foot_velocity())**2))), #left foot speed
-    lambda _, __, ___, periodic_reward_values: np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]), #right foot force
-    lambda _, __, ___, periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * (1-np.exp(-2*norm(WalkingSimulator.get_right_foot_velocity())**2))), #right foot speed
-    lambda _, obs, __, ___: - 1 * np.sum((1-np.exp(-2*np.abs(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0])))), #x velocity
-    lambda _, obs, __, ___: -1 * (1-np.exp(-2*np.abs(obs["current_lin_vel"][1]))), #y velocity
-    lambda env, obs, _, __: -1 * (1-np.exp(-3*np.sum((1-env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])**2)))), #quaternion difference
-    lambda _, __, last_action, ___: -1 * np.sum(1-np.exp(-5*norm(last_action))), #action delta
-    lambda _, obs, __, ___: -1 * np.sum(1-np.exp(-0.05*norm(obs["current_joint_torques"]))), #torques
-    lambda _, obs, __, ___: -1 * np.sum(1-np.exp(-0.10*(norm(obs["current_angular_velocity"])+obs["body_acceleration"]))), #acceleration
+    lambda _, __, ___, ____: 1, #bias
+    lambda _, __, ___, 0.4*periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_left"]), #left foot force
+    lambda _, __, ___, 0.4*periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * (1-np.exp(-2*norm(WalkingSimulator.get_left_foot_velocity())**2))), #left foot speed
+    lambda _, __, ___, 0.4*periodic_reward_values: np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]), #right foot force
+    lambda _, __, ___, 0.4*periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * (1-np.exp(-2*norm(WalkingSimulator.get_right_foot_velocity())**2))), #right foot speed
+    lambda _, obs, __, ___: - 0.3 * np.sum((1-np.exp(-2*np.abs(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0])))), #x velocity
+    lambda _, obs, __, ___: -0.3 * (1-np.exp(-2*np.abs(obs["current_lin_vel"][1]))), #y velocity
+    lambda env, obs, _, __: -0.3 * (1-np.exp(-3*np.sum((1-env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])**2)))), #quaternion difference
+    lambda _, __, last_action, ___: -0.1 * np.sum(1-np.exp(-5*norm(last_action))), #action delta
+    lambda _, obs, __, ___: -0.1 * np.sum(1-np.exp(-0.05*norm(obs["current_joint_torques"]))), #torques
+    lambda _, obs, __, ___: -0.1 * np.sum(1-np.exp(-0.10*(norm(obs["current_angular_velocity"])+obs["body_acceleration"]))), #acceleration
 ]
 
 action_space = gym.spaces.Box(low=np.array(lower_joint_limits), high=np.array(upper_joint_limits), shape=(10,), dtype=float)
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     }
 
     config = {
-        "total_timesteps": 10e6
+        "total_timesteps": 90e6
     }
 
     all_configs = {
@@ -177,5 +177,6 @@ if __name__ == "__main__":
             model_save_path=f"tmp/models/{run.id}",
             verbose=2,
         ),
+    model.save("prc_model")
     )
     run.finish()
