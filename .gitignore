@@ -17,4 +17,6 @@ reward_log.txt
 config/BestOf.ftn
 distance_log.txt
 config/*
+train_log.txt
+
 
