@@ -61,10 +61,10 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, accel
 
 rew_terms = [
     lambda _, __, ___, ____: 1, #bias
-    lambda _, __, ___, 0.4*periodic_reward_values: np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_left"]), #left foot force
-    lambda _, __, ___, 0.4*periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_left"] * (1-np.exp(-2*norm(WalkingSimulator.get_left_foot_velocity())**2))), #left foot speed
-    lambda _, __, ___, 0.4*periodic_reward_values: np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]), #right foot force
-    lambda _, __, ___, 0.4*periodic_reward_values: np.sum(periodic_reward_values["expected_c_spd_right"] * (1-np.exp(-2*norm(WalkingSimulator.get_right_foot_velocity())**2))), #right foot speed
+    lambda _, __, ___, periodic_reward_values: 0.4*np.sum(WalkingSimulator.foot_contact(1) * periodic_reward_values["expected_c_frc_left"]), #left foot force
+    lambda _, __, ___, periodic_reward_values: 0.4*np.sum(periodic_reward_values["expected_c_spd_left"] * (1-np.exp(-2*norm(WalkingSimulator.get_left_foot_velocity())**2))), #left foot speed
+    lambda _, __, ___, periodic_reward_values: 0.4*np.sum(WalkingSimulator.foot_contact(2) * periodic_reward_values["expected_c_frc_right"]), #right foot force
+    lambda _, __, ___, periodic_reward_values: 0.4*np.sum(periodic_reward_values["expected_c_spd_right"] * (1-np.exp(-2*norm(WalkingSimulator.get_right_foot_velocity())**2))), #right foot speed
     lambda _, obs, __, ___: - 0.3 * np.sum((1-np.exp(-2*np.abs(obs['target_forwards_vel'][0]-obs['current_lin_vel'][0])))), #x velocity
     lambda _, obs, __, ___: -0.3 * (1-np.exp(-2*np.abs(obs["current_lin_vel"][1]))), #y velocity
     lambda env, obs, _, __: -0.3 * (1-np.exp(-3*np.sum((1-env.compute_quaternion_difference(obs["current_body_orientation_quaternion"])**2)))), #quaternion difference
