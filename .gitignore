@@ -10,3 +10,4 @@ wandb
 tmp
 .venv
 Normal.ftn
+config
