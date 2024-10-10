@@ -73,8 +73,8 @@ class MoToFlexEnv(gym.Env):
         self.render_mode = render_mode
         self.last_polar = None
 
-        self.lower_joint_limits = [-0.379, -0.48, -0.79, -0.28, -0.174, -0.379, -0.48, -0.79, -0.28, -0.174]
-        self.upper_joint_limits = [0.379, 0.79, 0.09, 0.28, 0.174, 0.379, 0.79, 0.09, 0.28, 0.174]
+        self.lower_joint_limits = [-0.379, -0.48, -0.79, -0.47, -0.22, -0.379, -0.48, -0.79, -0.47, -0.22]
+        self.upper_joint_limits = [0.379, 0.79, 0.09, 0.47, 0.22, 0.379, 0.79, 0.09, 0.47, 0.22]
         self.joint_ranges = [0.76, 1.27, 0.88, 0.56, 0.348, 0.76, 1.27, 0.88, 0.56, 0.348]
 
         """
@@ -140,7 +140,7 @@ class MoToFlexEnv(gym.Env):
     
     def _reward(self, obs, last_action, periodic_reward_values):
         self.rewards = []
-        reward_log = {"bias": 0, "frc_left": 0, "wanted_spd_left": 0, "spd_left": 0, "frc_right": 0, "wanted_spd_right": 0, "spd_right": 0, "vel": 0, "quat": 0, "act": 0, "vel_y": 0, "torque": 0, "acc": 0, "height": 0}
+        reward_log = {"bias": 0, "frc_left": 0, "spd_left": 0, "wanted_spd_left": 0, "frc_right": 0, "spd_right": 0, "wanted_spd_right": 0, "vel": 0, "y_vel": 0, "quat": 0, "act": 0, "torque": 0, "acc": 0, "potential": 0, "height": 0}
         for f in self.reward_functions:
             val = f(self, obs, last_action, periodic_reward_values)
             self.rewards.append(val)
@@ -297,6 +297,10 @@ class MoToFlexEnv(gym.Env):
         truncated = not WalkingSimulator.is_running() or not standing
         terminated = self.time == 300
         
+        if truncated or terminated:
+            with open("aprc_distance_log.txt", "a") as file:
+                file.write(f"Time: {self.time} Pose: {self.current_pose[:3]}\n")
+
         info = self._get_info()
 
         if self.print_counter%10000==0:
@@ -370,9 +374,10 @@ class MoToFlexEnv(gym.Env):
                     size = WalkingSimulator.get_box_size_in_flexbox(i, j)
                     MoToFlexEnv._draw_cube(ax, size, pose)
             
-            ax.text2D(0.05, 0.95, "Rew: {} = {:.2f}".format(' + '.join(['{:.2f}'.format(x) for x in self.rewards]), sum(self.rewards)), transform=ax.transAxes)
-            ax.text2D(0.05, 0.9, "Action L: {}".format(', '.join(['{:.4f}'.format(x) for x in self.action_data[:len(self.action_data)//2]])), transform=ax.transAxes)
-            ax.text2D(0.05, 0.85, "Action R: {}".format(', '.join(['{:.4f}'.format(x) for x in self.action_data[len(self.action_data)//2:]])), transform=ax.transAxes)
+            ax.text2D(0.05, 0.95, "Rew: {} = {:.2f}".format(' + '.join(['{:.2f}'.format(x) for x in self.rewards[:len(self.rewards)//2]]), sum(self.rewards)), transform=ax.transAxes)
+            ax.text2D(0.05, 0.9, "Rew: {} = {:.2f}".format(' + '.join(['{:.2f}'.format(x) for x in self.rewards[len(self.rewards)//2:]]), sum(self.rewards)), transform=ax.transAxes)
+            ax.text2D(0.05, 0.85, "Action L: {}".format(', '.join(['{:.4f}'.format(x) for x in self.action_data[:len(self.action_data)//2]])), transform=ax.transAxes)
+            ax.text2D(0.05, 0.8, "Action R: {}".format(', '.join(['{:.4f}'.format(x) for x in self.action_data[len(self.action_data)//2:]])), transform=ax.transAxes)
             for i, fv in enumerate(self.pushes):
                 ax.text2D(0.05, 0.8 - i * 0.05, str(fv), transform=ax.transAxes)
 
