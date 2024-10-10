@@ -20,4 +20,4 @@ config/BestOf.ftn
 config/*
 train_log.txt
 distance_log.txt
-adj_prc_distance_log.txt
+aprc_distance_log.txt
