@@ -19,3 +19,5 @@ optuna_logs.txt
 config/BestOf.ftn
 config/*
 train_log.txt
+distance_log.txt
+aprc_distance_log.txt
