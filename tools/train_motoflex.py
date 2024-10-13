@@ -16,38 +16,36 @@ import numpy as np
 from numpy.linalg import norm
 from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecVideoRecorder, VecNormalize
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecVideoRecorder
 import wandb
 from wandb.integration.sb3 import WandbCallback
 import torch
 import torch.nn as nn
 
-N_TRIALS = 40
-N_STARTUP_TRIALS = 5
-N_EVALUATIONS = 2
-N_TIMESTEPS = 150000
-EVAL_FREQ = int(N_TIMESTEPS / N_EVALUATIONS)
-N_EVAL_EPISODES = 3
+N_TIMESTEPS = 30000000
 
-AVERAGE_REWARDS_OVER_N_EPISODES = 50
-
-multi_input_policy_config = dict(net_arch=[128, 128, 128])
+multi_input_policy_config = dict(net_arch=[128, 128, 128, 128])
 
 ppo_config = {
         "policy": "MultiInputPolicy",
         "gae_lambda": 0.95,
-        "gamma": 0.99,
+        "gamma": 0.9795,
+        "max_grad_norm": 0.5443,
         "n_steps": 512,
         "batch_size": 16,
+        "clip_range": 0.1881,
         "n_epochs": 4,
-        "ent_coef": 0.025,
-        "learning_rate": 0.0001,
-        "clip_range": 0.2,
+        "ent_coef": 0.0014,
+        "learning_rate": 0.0015,
         "use_sde": True,
         "policy_kwargs": multi_input_policy_config,
         "sde_sample_freq": 4,
         "verbose": 1,
 }
+
+lower_joint_limits = [-0.79, -0.48, -2.11, -0.92, -0.76, -0.378, -0.48, -2.12, -0.93, -0.397]
+upper_joint_limits = [0.38, 1.56, 0.09, 1.18, 0.39, 0.79, 1.56, 0.09, 1.18, 0.76]
+
 
 # For some more explanations, see envtest.ipynb.
 obs_space = gym.spaces.Dict({
@@ -85,9 +83,9 @@ obs_terms = lambda env, cycle_time, left_cycle_offset, right_cycle_offset, accel
     }
 
 rew_terms = [
-    lambda _, obs, __, ___: -10 * np.sum(0.30-obs["current_body_position"][0]),
+    lambda _, obs, __, ___: -5 * np.sum(0.30-obs["current_body_position"][0]),
 ]
-action_space = gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=float)
+action_space = gym.spaces.Box(low=np.array(lower_joint_limits), high=np.array(upper_joint_limits), shape=(10,), dtype=float)
 
 action_function = lambda d: (d.tolist())
 
@@ -95,40 +93,6 @@ random_push = {
     "probability": 0.00,
     "force_range_x": [500, 1000]
 }
-
-def sample_ppo_params(trial: optuna.Trial) -> Dict[str, Any]:
-    gamma = 1.0 - trial.suggest_float("gamma", 0.0001, 0.1, log=True)
-    max_grad_norm = trial.suggest_float("max_grad_norm",0.3, 5.0, log=True)
-    gae_lambda = trial.suggest_float("gae_lambda", 0.001, 0.2, log=True)
-    n_steps = 2**trial.suggest_int("exponent_n_steps", 5, 10)
-    learning_rate = trial.suggest_float("lr", 0.0001, 0.003)
-    ent_coef = trial.suggest_float("ent_coeff", 0.001, 0.1, log=True)
-    ortho_init = trial.suggest_categorical("ortho_init", [False,True])
-    net_arch = trial.suggest_categorical("net_arch", ["small", "medium", "large"])
-    activation_fn = trial.suggest_categorical("activation_fn", ["tanh", "relu"])
-
-    if(net_arch == "small"):
-        net_arch = [128, 128, 128,]
-    if(net_arch == "medium"):
-        net_arch = [128, 128, 128, 128]
-    if(net_arch == "large"):
-        net_arch = [128, 300, 300, 128]
-
-    activation_fn = {"tanh": nn.Tanh, "relu": nn.ReLU}[activation_fn]
-
-    return {
-            "gamma": gamma,
-            "max_grad_norm": max_grad_norm,
-            "gae_lambda": gae_lambda,
-            "n_steps": n_steps,
-            "learning_rate": learning_rate,
-            "ent_coef": ent_coef,
-            "policy_kwargs": {
-                "ortho_init": ortho_init,
-                "net_arch": net_arch,
-                "activation_fn": activation_fn
-            },
-    }
 
 def make_env():
     env = gym.make("MoToFlex/WalkingSimulator-v0", 
@@ -145,17 +109,15 @@ def make_env():
     env = Monitor(env)  # record stats such as returns    
     return env
 
-def objective(trial: optuna.Trial) -> float:
-    kwargs = ppo_config
-    kwargs.update(sample_ppo_params(trial))
-    
+if __name__ == '__main__':
+
     config = {
         "total_timesteps": N_TIMESTEPS
     }
 
     all_configs = {
         "learn_conf": config,
-        "ppo_config": kwargs,
+        "ppo_config": ppo_config,
         "reward_terms": rew_terms,
         "observation_space": obs_space,
         "observation_terms": obs_terms,
@@ -180,71 +142,20 @@ def objective(trial: optuna.Trial) -> float:
         record_video_trigger=lambda x: x % 30000 == 0,
         video_length=200,
     )
-    
-    obs_key_to_normalize = ["left_foot_velocity", "right_foot_velocity", "current_joint_angles", "current_body_position", "current_joint_velocities",
-            "current_body_orientation_quaternion", "current_angular_velocity", "current_lin_vel",
-            "target_forwards_vel", "current_joint_torques", "body_acceleration", "p"]
-
-    env = VecNormalize(
-            env,
-            clip_obs = 20.0,
-            norm_obs_keys = obs_key_to_normalize
-    )
 
     model = PPO(
         env=env,
-        **kwargs,
+        **ppo_config,
         tensorboard_log=f"tmp/runs/{run.id}"
     )    
 
-    nan_encountered = False
-    value_error = False
-    try:
-        model.learn(
-            **config,
-            callback=WandbCallback(
-                gradient_save_freq=100,
-                model_save_path=f"tmp/models/{run.id}",
-                verbose=2,
-            ),
-        )
-    except AssertionError as e:
-        print(e)
-        nan_encountered = True
-    except ValueError as e:
-        print(e)
-        value_error = True
-    finally:
-        model.env.close()
-
-    if nan_encountered:
-        return float("nan")
-
-    if value_error:
-        return float("nan")
-
-    run.finish()
-    
-    rewards = env.env_method("get_episode_rewards")
-    last_n_episode_rewards = rewards[0][-50::1]
-    average_rewards_for_last_n_episodes = sum(last_n_episode_rewards)/AVERAGE_REWARDS_OVER_N_EPISODES
-    
-    return average_rewards_for_last_n_episodes
-    
-if __name__ == "__main__":
+    model.learn(
+        **config,
+        callback=WandbCallback(
+            gradient_save_freq=100,
+            model_save_path=f"tmp/models/{run.id}",
+            verbose=2,
+        ),
+    )
 
 
-    # Add stream handler of stdout to show the messages
-    optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
-    study_name = "pbr_optuna"  # Unique identifier of the study.
-    storage_name = "sqlite:///{}.db".format(study_name)
-
-    sampler = TPESampler(n_startup_trials=N_STARTUP_TRIALS)
-    pruner = MedianPruner(n_startup_trials=N_STARTUP_TRIALS, n_warmup_steps = 1e5)
-
-    study = optuna.create_study(sampler=sampler, pruner=pruner, direction="maximize", study_name=study_name, storage=storage_name, load_if_exists=True)
-    
-    try:
-        study.optimize(objective, n_trials=N_TRIALS, timeout=None)
-    except KeyboardInterrupt:
-        pass
